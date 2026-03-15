@@ -1,0 +1,108 @@
+/* app/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background:       220 30% 4%;
+    --foreground:       180 100% 90%;
+    --card:             220 25% 6%;
+    --card-foreground:  180 50% 90%;
+    --border:           180 30% 12%;
+    --muted:            220 20% 10%;
+    --muted-foreground: 180 20% 40%;
+    --cyan:             #00ffe7;
+    --red:              #ff2d2d;
+    --orange:           #ff6b00;
+    --yellow:           #ffe600;
+    --green:            #00ff88;
+  }
+}
+
+* { border-color: hsl(var(--border)); box-sizing: border-box; }
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Rajdhani', sans-serif;
+  overflow-x: hidden;
+}
+
+.font-mono { font-family: 'Share Tech Mono', monospace; }
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 231, 0.015) 2px,
+    rgba(0, 255, 231, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid background */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,231,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,231,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--cyan); }
+  50%       { opacity: 0.5; box-shadow: 0 0 2px var(--cyan); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes sweep-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes attack-flash {
+  0%   { background: rgba(255,45,45,0.2); }
+  100% { background: transparent; }
+}
+@keyframes radar-ping {
+  0%   { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.live-pulse  { animation: pulse-glow 2s ease-in-out infinite; }
+.blink       { animation: blink 1s step-end infinite; }
+.sweep-in    { animation: sweep-in 0.3s ease forwards; }
+.attack-new  { animation: attack-flash 1.5s ease forwards; }
+
+/* Leaflet dark overrides */
+.leaflet-container {
+  background: #020810 !important;
+  font-family: 'Share Tech Mono', monospace !important;
+}
+.leaflet-tile { filter: brightness(0.3) saturate(0.5) hue-rotate(160deg) !important; }
+.leaflet-control-attribution { display: none !important; }
+.leaflet-control-zoom a {
+  background: rgba(0,255,231,0.1) !important;
+  color: var(--cyan) !important;
+  border-color: rgba(0,255,231,0.2) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,231,0.2); border-radius: 2px; }

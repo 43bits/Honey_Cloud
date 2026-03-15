@@ -1,0 +1,52 @@
+uvicorn api.threat_api:app --reload --host 0.0.0.0 --port 8000
+cd dashboard && npm run dev
+
+
+for attacking
+python scripts/demo.py
+python -m scripts.test_pipeline
+or localhost/docs#
+ analyse 
+ json format 
+ {
+  "source_ip": "185.234.219.4",
+  "source_port": 54321,
+  "port_targeted": 22,
+  "protocol": "tcp",
+  "country": "india"
+}
+
+
+curl -X DELETE http://localhost:8000/attacks/clear
+```
+
+The dashboard will go back to all zeros instantly. Perfect for back-to-back demos.
+
+---
+
+## Your Complete Project is Now Done ✅
+```
+✅ Phase 1 — Environment
+✅ Phase 2 — SSH Honeypot
+✅ Phase 3 — Kafka Pipeline
+✅ Phase 4 — ML Models (3 algorithms)
+✅ Phase 5 — FastAPI Backend (6 endpoints)
+✅ Phase 6 — Next.js Dashboard (live, dark SOC UI)
+✅ Phase 7 — Demo Script (5-phase storytelling demo)
+
+
+
+
+
+
+
+
+
+
+
+
+to do 
+1st → MITRE ATT&CK Mapper    (fastest to build, huge credibility)
+2nd → AI Threat Report        (most visually impressive for demo)
+3rd → Threat Intel Agent      (shows AI architecture depth)
+4th → Attack Prediction       (pure technical depth)
