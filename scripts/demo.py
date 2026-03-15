@@ -106,7 +106,34 @@ def make_ftp_attack(ip: str) -> dict:
         'timestamp':      now(),
     }
 
+def make_normal_noise(ip: str) -> dict:
+    """Very low intensity traffic that should appear as LOW risk."""
+    return {
+        'source_ip': ip,
+        'source_port': random.randint(40000, 65000),
+        'port_targeted': random.choice([80, 443, 53]),
+        'protocol': 'tcp',
+        'country': random.choice(['USA', 'Germany', 'France', 'UK', 'Singapore']),
+        'login_attempts': 1,
+        'connection_rate': round(random.uniform(0.2, 2.0), 2),
+        'timestamp': now(),
+    }
 # ── Demo Phases ────────────────────────────────────────
+
+def phase_0_background():
+    """Normal internet background noise."""
+    banner("PHASE 0  ›  BACKGROUND INTERNET TRAFFIC", '\033[92m')
+    print("  Normal internet scanning and harmless connections...\n")
+
+    for _ in range(8):
+        ip = f'{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}'
+        log = make_normal_noise(ip)
+        send(log)
+        log_sent('Background Traffic', ip, log['port_targeted'], 'LOW')
+        time.sleep(0.7)
+
+    print("\n  [Dashboard] LOW risk baseline established...")
+    time.sleep(2)
 
 def phase_1_trickle():
     """3 slow attacks to establish baseline — builds suspense."""
@@ -246,7 +273,7 @@ def run_full_demo():
   Then press ENTER to start the demo...
     """)
     input()
-
+    phase_0_background()
     phase_1_trickle()
     phase_2_botnet()
     phase_3_apt()

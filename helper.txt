@@ -50,3 +50,72 @@ to do
 2nd → AI Threat Report        (most visually impressive for demo)
 3rd → Threat Intel Agent      (shows AI architecture depth)
 4th → Attack Prediction       (pure technical depth)
+
+
+
+what does MITRE ATTACK MAPPER DO this 
+2)"Every attack is automatically mapped to the MITRE ATT&CK framework — the industry standard used by CISA, NSA, and every major SOC team. You can see which tactics are most active in our heatmap. Clicking any cell shows the specific techniques observed. This lets security analysts instantly understand attacker intent and prioritize response using the same language as the global threat intelligence community."
+
+GET /mitre/heatmap
+→ Returns tactic frequency data for the dashboard heatmap
+→ Used by MitreHeatmap component, refreshes every 5 seconds
+
+GET /mitre/detail/SSH Brute Force
+→ Returns full MITRE entry including description, detection, mitigations
+→ Used by the report generator to enrich PDF/HTML reports
+
+Attack store
+→ Every attack now carries mitre_technique_id, mitre_tactic,
+  mitre_url fields automatically from run_ml_pipeline
+
+  GET /mitre/heatmap
+→ Returns tactic frequency data for the dashboard heatmap
+→ Used by MitreHeatmap component, refreshes every 5 seconds
+
+GET /mitre/detail/SSH Brute Force
+→ Returns full MITRE entry including description, detection, mitigations
+→ Used by the report generator to enrich PDF/HTML reports
+
+Attack store
+→ Every attack now carries mitre_technique_id, mitre_tactic,
+  mitre_url fields automatically from run_ml_pipeline
+
+  Now analysts instantly know:
+
+attacker goal
+
+attack stage
+
+recommended defense
+
+This is exactly how professional SOC tools work like:
+
+CrowdStrike
+
+Splunk
+
+Palo Alto Networks
+Our system automatically maps every detected attack to the MITRE ATT&CK framework, the global standard used by SOC teams and government cybersecurity agencies.
+ This allows analysts to understand attacker behavior in a standardized language and quickly prioritize response.
+
+
+
+
+ next phase 
+ High-risk attack arrives (CRITICAL or HIGH)
+              ↓
+Agent 1 — Log Analyzer
+  "What exactly happened? Extract all indicators."
+              ↓
+Agent 2 — Threat Investigator  
+  "Is this IP known malicious? What campaign is this?"
+              ↓
+Agent 3 — Risk Analyst
+  "How dangerous is this specifically? What's at risk?"
+              ↓
+Agent 4 — Response Recommender
+  "What should the security team do RIGHT NOW?"
+              ↓
+Full investigation report stored with the attack
+              ↓
+Dashboard shows investigation panel per attack

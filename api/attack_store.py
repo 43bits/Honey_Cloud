@@ -2,7 +2,44 @@
 from collections import deque
 from datetime import datetime
 import threading
+# Add at the bottom of api/attack_store.py
 
+class InvestigationStore:
+    """Stores TI agent investigation reports."""
+
+    def __init__(self, maxsize=50):
+        self._reports = {}           # keyed by source_ip + timestamp
+        self._order   = []           # insertion order
+        self._maxsize = maxsize
+        self._lock    = threading.Lock()
+
+    def add(self, attack: dict, report: dict):
+        key = f"{attack.get('source_ip','?')}_{attack.get('timestamp','?')}"
+        with self._lock:
+            self._reports[key] = {**report, 'key': key}
+            if key not in self._order:
+                self._order.append(key)
+            # Keep only last N reports
+            while len(self._order) > self._maxsize:
+                old = self._order.pop(0)
+                self._reports.pop(old, None)
+
+    def get_recent(self, limit=10) -> list:
+        with self._lock:
+            keys = self._order[-limit:][::-1]  # newest first
+            return [self._reports[k] for k in keys if k in self._reports]
+
+    def get_by_key(self, key: str) -> dict:
+        with self._lock:
+            return self._reports.get(key, {})
+
+    def count(self) -> int:
+        with self._lock:
+            return len(self._reports)
+
+
+# Global singleton
+investigation_store = InvestigationStore()
 # Thread-safe storage for last 200 attacks
 class AttackStore:
     def __init__(self, maxsize=200):
