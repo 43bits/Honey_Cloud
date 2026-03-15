@@ -301,6 +301,11 @@ async def live_stream():
     )
 
 
+
+
+
+
+
 # ── MITRE ATT&CK ──────────────────────────────────────
 @app.get("/mitre/heatmap")
 def mitre_heatmap():
@@ -324,6 +329,8 @@ def mitre_detail(attack_type: str):
     if not detail:
         return {"error": f"No MITRE mapping for: {attack_type}"}
     return detail
+
+
 
 
 # ── Threat Intelligence Agent ──────────────────────────
@@ -406,3 +413,73 @@ def generate_report():
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+    
+    
+    
+    
+# model predictionEngine api/threat_api.py
+
+@app.get("/predict/next")
+def predict_next():
+    """
+    Predicts the next likely attack based on recent sequence.
+    Uses LSTM model trained on attack patterns.
+    """
+    from ml_models.PredictionEngine.attack_predictor import (
+        predict_next_attack,
+        get_recommendation,
+    )
+
+    # Get recent attack types as sequence
+    recent  = store.get_recent(20)
+    types   = [a.get('attack_type', 'Port Scan / Other')
+               for a in recent]
+
+    if len(types) < 3:
+        return {
+            'ready':      False,
+            'reason':     'Need at least 3 attacks to predict',
+            'predicted':  None,
+            'confidence': 0,
+        }
+
+    result = predict_next_attack(types)
+
+    if result.get('ready'):
+        result['recommendation'] = get_recommendation(
+            result['predicted'],
+            result['confidence'],
+        )
+
+    return result
+
+
+@app.post("/predict/train")
+def retrain_model():
+    """
+    Retrain LSTM on current stored attack data.
+    Call this after collecting enough real attacks.
+    """
+    from ml_models.PredictionEngine.attack_predictor import train_lstm
+
+    attacks = store.get_recent(200)
+    types   = [
+        a.get('attack_type', 'Port Scan / Other')
+        for a in attacks
+    ]
+
+    if len(types) < 20:
+        return {
+            "error": f"Need 20+ attacks to train. Have {len(types)}."
+        }
+
+    threading.Thread(
+        target=train_lstm,
+        args=(types,),
+        daemon=True,
+    ).start()
+
+    return {
+        "message": f"Training started on {len(types)} attacks",
+        "status":  "running in background",
+    }

@@ -118,6 +118,7 @@ import MitreHeatmap from '@/components/MitreHeatmap';
 import { fetchAttacks, fetchStats, subscribeToLiveAttacks } from '@/lib/api';
 import type { Attack, Stats } from '@/lib/api';
 
+import PredictionPanel from '@/components/PredictionPanel';
 import InvestigationPanel from '@/components/InvestigationPanel';
 
 const AttackMap = lazy(() => import('@/components/AttackMap'));
@@ -330,15 +331,17 @@ export default function Dashboard() {
           <MitreHeatmap />
         </div>
         
+        {/* Investiga  */}
         <div>
-  <div
-    className="text-[9px] font-mono tracking-widest mb-2"
-    style={{ color: 'rgba(0,255,231,0.35)' }}
-  >
-    AI THREAT INTELLIGENCE INVESTIGATIONS
-  </div>
-  <InvestigationPanel />
-</div>
+          <div
+          className="text-[9px] font-mono tracking-widest mb-2"
+          style={{ color: 'rgba(0,255,231,0.35)' }}
+           >
+           AI THREAT INTELLIGENCE INVESTIGATIONS
+          </div>
+          <InvestigationPanel />
+          </div>
+
         {/* ── Live attack feed ── */}
         <div>
           <div
@@ -349,6 +352,20 @@ export default function Dashboard() {
           </div>
           <AttackFeed attacks={attacks} />
         </div>
+
+
+            {/* predictionEngine */}
+        <div>
+       <div
+        className="text-[9px] font-mono tracking-widest mb-2"
+        style={{ color: 'rgba(0,255,231,0.35)' }}
+        >
+          LSTM ATTACK PREDICTION ENGINE
+      </div>
+      <PredictionPanel />
+      </div>
+
+
 
       </div>
 
