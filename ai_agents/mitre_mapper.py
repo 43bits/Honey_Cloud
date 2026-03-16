@@ -160,6 +160,94 @@ MITRE_DATABASE = {
         'severity':       'CRITICAL',
         'color':          '#ff2d2d',
         'url':            'https://attack.mitre.org/techniques/T1021/004/',
+        
+    
+    },
+    # Add these 3 entries to MITRE_DATABASE in ai_agents/mitre_mapper.py
+
+    # ── SMB Attack ─────────────────────────────────────────────────
+    'SMB Attack': {
+        'technique_id':   'T1021.002',
+        'technique_name': 'Remote Services: SMB/Windows Admin Shares',
+        'tactic':         'Lateral Movement',
+        'tactic_id':      'TA0008',
+        'description':    (
+            'Adversaries exploit SMB protocol to move laterally across '
+            'networks, access file shares, or deploy malware. SMB '
+            'vulnerabilities like EternalBlue (MS17-010) have been used '
+            'by ransomware families including WannaCry and NotPetya for '
+            'devastating large-scale attacks.'
+        ),
+        'detection':      (
+            'Monitor SMB traffic on ports 445 and 139. Alert on '
+            'authentication failures and unusual file access patterns. '
+            'Block SMB at perimeter — it should never be internet-facing.'
+        ),
+        'mitigation':     [
+            'M1042 — Disable or Remove Feature: block SMB at firewall',
+            'MS17-010 patch — apply immediately if not already done',
+            'M1037 — Filter Network Traffic: block ports 445 and 139',
+            'M1026 — Privileged Account Management: limit admin shares',
+        ],
+        'severity':       'CRITICAL',
+        'color':          '#ff2d2d',
+        'url':            'https://attack.mitre.org/techniques/T1021/002/',
+    },
+
+    # ── Email Attack ───────────────────────────────────────────────
+    'Email Attack': {
+        'technique_id':   'T1566.001',
+        'technique_name': 'Phishing: Spearphishing Attachment',
+        'tactic':         'Initial Access',
+        'tactic_id':      'TA0001',
+        'description':    (
+            'Adversaries probe email services (SMTP port 25, 587, 465) '
+            'for open relays, credential harvesting, or as staging '
+            'infrastructure for phishing campaigns. Open SMTP relays '
+            'are exploited to send spam and malware at scale.'
+        ),
+        'detection':      (
+            'Monitor SMTP connection attempts from external IPs. '
+            'Alert on authentication failures and relay attempts. '
+            'Check for unusual sending volumes from single sources.'
+        ),
+        'mitigation':     [
+            'M1054 — Software Configuration: disable open mail relay',
+            'M1017 — User Training: educate users on phishing',
+            'Implement SPF, DKIM, and DMARC email authentication',
+            'M1031 — Network Intrusion Prevention: filter SMTP traffic',
+        ],
+        'severity':       'HIGH',
+        'color':          '#ff6b00',
+        'url':            'https://attack.mitre.org/techniques/T1566/001/',
+    },
+
+    # ── DNS Attack ─────────────────────────────────────────────────
+    'DNS Attack': {
+        'technique_id':   'T1071.004',
+        'technique_name': 'Application Layer Protocol: DNS',
+        'tactic':         'Command and Control',
+        'tactic_id':      'TA0011',
+        'description':    (
+            'Adversaries abuse DNS protocol for command-and-control '
+            'communication, data exfiltration via DNS tunneling, or '
+            'amplification DDoS attacks. DNS traffic is often allowed '
+            'through firewalls making it an attractive covert channel.'
+        ),
+        'detection':      (
+            'Monitor for unusually high DNS query volumes from single '
+            'sources. Alert on DNS queries with abnormally long names '
+            'or high entropy subdomains indicating tunneling.'
+        ),
+        'mitigation':     [
+            'M1037 — Filter Network Traffic: restrict DNS to trusted resolvers',
+            'M1031 — Network Intrusion Prevention: detect DNS tunneling',
+            'Deploy DNS monitoring and anomaly detection',
+            'Block recursive DNS queries from external sources',
+        ],
+        'severity':       'MEDIUM',
+        'color':          '#ffe600',
+        'url':            'https://attack.mitre.org/techniques/T1071/004/',
     },
 }
 

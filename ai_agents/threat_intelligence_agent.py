@@ -158,28 +158,83 @@ Include actual commands, firewall rules, or config changes where applicable."""
     return run_agent(system, user, max_tokens=400)
 
 
-# ── Orchestrator ───────────────────────────────────
+# ── Orchestrator ──────────────────────────────────
 
-def run_threat_intelligence_pipeline(attack: dict) -> dict:
-    """
-    Runs all 4 agents in sequence on a single attack.
-    Returns complete investigation report.
-    Only runs on HIGH or CRITICAL attacks to save API calls.
-    """
+    
+    
+    
 
+# def run_threat_intelligence_pipeline(attack: dict,
+#                                       force: bool = False) -> dict:
+#     """
+#     Runs all 4 agents in sequence on a single attack.
+#     force=True bypasses the risk level threshold check.
+#     """
+#     risk_level = attack.get('risk_level', 'LOW')
+
+#     # Only skip if not forced AND below threshold
+#     if not force and risk_level not in ('HIGH', 'CRITICAL'):
+#         return {
+#             'skipped': True,
+#             'reason':  f'Risk level {risk_level} below threshold',
+#         }
+
+#     print(f"\n[TI Agent] Investigating {risk_level} attack from "
+#           f"{attack.get('source_ip','?')}...")
+
+#     start = time.time()
+
+#     print("[TI Agent] Agent 1: Analyzing log indicators...")
+#     log_analysis = agent_log_analyzer(attack)
+
+#     print("[TI Agent] Agent 2: Investigating threat context...")
+#     investigation = agent_threat_investigator(attack, log_analysis)
+
+#     print("[TI Agent] Agent 3: Assessing risk...")
+#     risk_assessment = agent_risk_analyst(attack, investigation)
+
+#     print("[TI Agent] Agent 4: Generating response actions...")
+#     response_actions = agent_response_recommender(attack, risk_assessment)
+
+#     elapsed = round(time.time() - start, 1)
+#     print(f"[TI Agent] Complete in {elapsed}s")
+
+#     return {
+#         'skipped':          False,
+#         'attack_ip':        attack.get('source_ip', 'unknown'),
+#         'attack_type':      attack.get('attack_type', 'unknown'),
+#         'risk_level':       risk_level,
+#         'mitre_id':         attack.get('mitre_technique_id', 'unknown'),
+#         'log_analysis':     log_analysis,
+#         'investigation':    investigation,
+#         'risk_assessment':  risk_assessment,
+#         'response_actions': response_actions,
+#         'generated_at':     time.strftime('%Y-%m-%d %H:%M:%S'),
+#         'elapsed_seconds':  elapsed,
+#     }
+
+
+def run_threat_intelligence_pipeline(attack: dict,
+                                      force: bool = False) -> dict:
+    """
+    Runs all 4 agents in sequence.
+    force=True bypasses risk level threshold (for manual investigations).
+    """
     risk_level = attack.get('risk_level', 'LOW')
-    if risk_level not in ('HIGH', 'CRITICAL'):
+
+    # Skip only if not forced AND below threshold
+    if not force and risk_level not in ('HIGH', 'CRITICAL'):
         return {
             'skipped': True,
-            'reason':  f'Risk level {risk_level} below threshold (need HIGH or CRITICAL)',
+            'reason':  f'Risk level {risk_level} below threshold '
+                       f'(need HIGH or CRITICAL)',
         }
 
-    print(f"\n[TI Agent] Investigating {risk_level} attack from "
-          f"{attack.get('source_ip','?')}...")
+    print(f"\n[TI Agent] Investigating {risk_level} attack "
+          f"from {attack.get('source_ip','?')}...")
 
     start = time.time()
 
-    # Run agents in sequence — each feeds into the next
     print("[TI Agent] Agent 1: Analyzing log indicators...")
     log_analysis = agent_log_analyzer(attack)
 
@@ -193,7 +248,7 @@ def run_threat_intelligence_pipeline(attack: dict) -> dict:
     response_actions = agent_response_recommender(attack, risk_assessment)
 
     elapsed = round(time.time() - start, 1)
-    print(f"[TI Agent] Investigation complete in {elapsed}s")
+    print(f"[TI Agent] Complete in {elapsed}s")
 
     return {
         'skipped':          False,

@@ -181,3 +181,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data sets 
+tcfzkbpw46-3.zip
+CICHoneynet2023.tar.xz
+CICHoneynet2023
+dionaeaClean2.csv.zip
+cic_extracted
+tcfzkbpw46-3
+unsed
+
+cic_full_extracted.csv
+cic_test_extracted.csv
+dionaea_fixed.csv
+dionaeaClean2.csv
+hornet40_processed.csv
+hornet41_geo.csv
+unified_final.csv
+unified_training_with_cic.csv
+unified_training.csv

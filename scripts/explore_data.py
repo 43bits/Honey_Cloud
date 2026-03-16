@@ -1,4 +1,5 @@
 # scripts/explore_data.py
+# used for extracting AWS data set which will feef to the three model isolated rainforest and cluster
 import pandas as pd
 
 df = pd.read_csv(r'F:\CyberSecurity\honeycloud\datasets\AWS_Honeypot_marx-geo.csv')

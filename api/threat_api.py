@@ -11,6 +11,7 @@ import asyncio
 import time
 import threading
 import urllib.request
+import pandas as pd
 
 from api.attack_store import store, investigation_store
 from ml_models.feature_engineering import engineer_features_from_live_log
@@ -48,26 +49,6 @@ class AttackLog(BaseModel):
     data_hex:        Optional[str]   = ""
 
 
-# ── Geo Location Helper ────────────────────────────────
-def get_ip_location(ip: str) -> dict:
-    """Get lat/lon for an IP using free ip-api.com service."""
-    try:
-        if ip.startswith(('192.168.', '10.', '172.', '127.', 'localhost')):
-            return {'lat': 0, 'lon': 0, 'country': 'Local', 'city': 'Local'}
-
-        url = f'http://ip-api.com/json/{ip}?fields=lat,lon,country,city,status'
-        with urllib.request.urlopen(url, timeout=2) as response:
-            data = json.loads(response.read())
-            if data.get('status') == 'success':
-                return {
-                    'lat':     float(data.get('lat', 0)),
-                    'lon':     float(data.get('lon', 0)),
-                    'country': str(data.get('country', 'Unknown')),
-                    'city':    str(data.get('city', 'Unknown')),
-                }
-    except Exception:
-        pass
-    return {'lat': 0, 'lon': 0, 'country': 'Unknown', 'city': 'Unknown'}
 
 
 # ── ML Pipeline ────────────────────────────────────────
@@ -80,9 +61,19 @@ def run_ml_pipeline(log: dict) -> dict:
     is_anomaly,  anomaly_score = predict_anomaly(features)
     attack_type, confidence    = predict_attack_type(features)
     campaign                   = predict_cluster(features)
+    # risk_score, risk_level, emoji = calculate_risk_score(
+    #     attack_type, confidence, is_anomaly,
+    #     anomaly_score, dst_port, campaign
+    # )
     risk_score, risk_level, emoji = calculate_risk_score(
-        attack_type, confidence, is_anomaly,
-        anomaly_score, dst_port, campaign
+        attack_type,
+        confidence,
+        is_anomaly,
+        anomaly_score,
+        dst_port,
+        campaign,
+        login_attempts  = int(log.get('login_attempts',  1) or 1),
+        connection_rate = float(log.get('connection_rate', 1.0) or 1.0),
     )
 
     geo   = get_ip_location(log.get('source_ip', ''))
@@ -147,6 +138,30 @@ def trigger_investigation(attack: dict):
             print(f"[TI] Investigation failed: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
+    
+
+
+# ── Geo Location Helper ────────────────────────────────
+def get_ip_location(ip: str) -> dict:
+    """Get lat/lon for an IP using free ip-api.com service."""
+    try:
+        if ip.startswith(('192.168.', '10.', '172.', '127.', 'localhost')):
+            return {'lat': 0, 'lon': 0, 'country': 'Local', 'city': 'Local'}
+
+        url = f'http://ip-api.com/json/{ip}?fields=lat,lon,country,city,status'
+        with urllib.request.urlopen(url, timeout=2) as response:
+            data = json.loads(response.read())
+            if data.get('status') == 'success':
+                return {
+                    'lat':     float(data.get('lat', 0)),
+                    'lon':     float(data.get('lon', 0)),
+                    'country': str(data.get('country', 'Unknown')),
+                    'city':    str(data.get('city', 'Unknown')),
+                }
+    except Exception:
+        pass
+    return {'lat': 0, 'lon': 0, 'country': 'Unknown', 'city': 'Unknown'}
+
 
 
 # ── Kafka Consumer Thread ──────────────────────────────
@@ -164,7 +179,8 @@ def kafka_consumer_thread():
             bootstrap_servers=['localhost:9092'],
             auto_offset_reset='latest',
             enable_auto_commit=True,
-            group_id='honeypot-api-group',
+            # group_id='honeypot-api-group',
+            group_id=f'honeypot-api-{int(time.time())}',
             value_deserializer=lambda m: json.loads(m.decode('utf-8')),
             consumer_timeout_ms=-1
         )
@@ -343,17 +359,34 @@ def get_investigations(limit: int = 10):
     }
 
 
+# @app.post("/investigate")
+# def investigate_attack(log: AttackLog):
+#     from ai_agents.threat_intelligence_agent import (
+#         run_threat_intelligence_pipeline
+#     )
+#     result = run_ml_pipeline(log.dict())
+#     # force=True — manual investigations always run
+#     # regardless of calculated risk level
+#     report = run_threat_intelligence_pipeline(result, force=True)
+
+#     if not report.get('skipped'):
+#         investigation_store.add(result, report)
+
+#     return {"attack": result, "investigation": report}
+
 @app.post("/investigate")
 def investigate_attack(log: AttackLog):
     """
-    Manually trigger a TI investigation on a specific attack.
-    Runs synchronously — good for testing and demos.
+    Manually trigger a TI investigation.
+    Always runs regardless of risk level (force=True).
     """
     from ai_agents.threat_intelligence_agent import (
         run_threat_intelligence_pipeline
     )
     result = run_ml_pipeline(log.dict())
-    report = run_threat_intelligence_pipeline(result)
+
+    # force=True — manual investigations always run
+    report = run_threat_intelligence_pipeline(result, force=True)
 
     if not report.get('skipped'):
         investigation_store.add(result, report)
@@ -483,3 +516,48 @@ def retrain_model():
         "message": f"Training started on {len(types)} attacks",
         "status":  "running in background",
     }
+    
+    
+# Add to api/threat_api.py
+
+# @app.get("/stats/geographic")
+# def geographic_stats():
+#     """
+#     Returns Hornet 40 geographic attack volume data.
+#     Shows which global regions are most targeted.
+#     """
+#     import os
+#     hornet_path = 'datasets/hornet40_processed.csv'
+
+#     if not os.path.exists(hornet_path):
+#         return {"error": "Hornet 40 data not processed yet"}
+
+#     df = pd.read_csv(hornet_path)
+
+#     # Total attacks per city across all 40 days
+#     city_totals = df.groupby('city')['attack_count']\
+#         .sum().sort_values(ascending=False)
+
+#     # Peak hour per city
+#     peak_hours = df.groupby(['city', 'hour'])['attack_count']\
+#         .sum().reset_index()
+#     peak_per_city = peak_hours.loc[
+#         peak_hours.groupby('city')['attack_count'].idxmax()
+#     ][['city', 'hour']].set_index('city')['hour'].to_dict()
+
+#     # Busiest day of week globally
+#     day_totals = df.groupby('weekday')['attack_count']\
+#         .sum().sort_values(ascending=False)
+
+#     return {
+#         "source":        "Hornet 40 Dataset — 40 days, 8 global locations",
+#         "city_totals":   city_totals.to_dict(),
+#         "peak_hours":    peak_per_city,
+#         "busiest_days":  day_totals.head(3).to_dict(),
+#         "total_events":  int(city_totals.sum()),
+#     }
+    
+    
+
+
+

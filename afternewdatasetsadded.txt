@@ -1,0 +1,106 @@
+# 1. Fix Dionaea CSV
+python scripts/fix_dionaea.py
+
+# 2. Merge AWS + Dionaea
+python scripts/merge_datasets.py
+
+# 3. Process Hornet 40 for geo stats
+python scripts/process_hornet40.py
+
+# 4. Retrain all three models on unified dataset
+python scripts/train_all_models.py
+
+# 5. Retrain LSTM on more diverse data
+python scripts/train_lstm.py
+
+# 6. Restart API
+uvicorn api.threat_api:app --reload --host 0.0.0.0 --port 8000
+
+# 7. Test geo endpoint
+curl http://localhost:8000/stats/geographic
+```
+
+---
+
+## What Judges Will See Now
+
+**Before:**
+```
+"Trained on AWS Honeypot dataset — 451,000 attacks"
+```
+
+**After:**
+```
+"Trained on unified multi-source dataset:
+  - AWS Honeypot:   451,000 attacks (cloud-based)
+  - Dionaea:        ~5,000 attacks  (malware honeypot)
+  - Total:          456,000+ attacks from 2 sources
+
+  Hornet 40 geographic analysis:
+  8 global honeypot locations, 40 days of traffic,
+  Frankfurt highest volume, peak attacks at 3AM UTC"
+```
+
+**New attack classes after merge:**
+```
+SSH Brute Force    ← AWS + Dionaea
+Web Exploit        ← AWS
+Database Attack    ← AWS + Dionaea (port 445, 1433)
+FTP Attack         ← AWS + Dionaea
+Telnet Attack      ← AWS + Dionaea
+SMB Attack         ← Dionaea (port 445) ← NEW
+Email Attack       ← Dionaea (port 25)  ← NEW
+DNS Attack         ← Dionaea (port 53)  ← NEW
+Port Scan / Other  ← AWS + Dionaea
+
+
+Dionaea adds SMB, Email, and DNS attack classes that AWS doesn't have — making your classifier genuinely more comprehensive.
+
+
+
+
+
+
+
+
+
+
+
+
+big data 
+.pcap files (raw network packets)
+        ↓
+tshark (network packet analyzer)
+extracts 15 features per packet
+        ↓
+Python converts to structured CSV
+        ↓
+Merged into unified_training.csv
+        ↓
+Retrain all models with CIC data
+        ↓
+Models now trained on 3 real-world
+honeypot datasets from different sources
+
+
+
+
+┌─────────────────────────────────────────────────────┐
+│         TRAINING DATASET COMPOSITION                │
+├──────────────────┬────────────┬─────────────────────┤
+│ Dataset          │ Rows       │ Source              │
+├──────────────────┼────────────┼─────────────────────┤
+│ AWS Honeypot     │ 406,766    │ Cloud honeypot       │
+│ Dionaea          │ 27,529     │ Malware honeypot     │
+│ CIC Honeynet     │ 13,767,678 │ Real network traffic │
+├──────────────────┼────────────┼─────────────────────┤
+│ TOTAL            │ 14,201,973 │ 3 real-world sources │
+└──────────────────┴────────────┴─────────────────────┘
+
+Attack Classes: 9
+  SSH Brute Force, Web Exploit, Database Attack,
+  FTP Attack, Telnet Attack, SMB Attack,
+  Email Attack, DNS Attack, Port Scan / Other
+
+Campaign Clusters: 8
+  Port Scan, SSH Brute Force, SMB, Web Exploit

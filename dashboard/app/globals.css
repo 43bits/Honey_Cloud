@@ -116,3 +116,34 @@ body::after {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* ── Leaflet popup — complete dark override ── */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-content-wrapper * {
+  background:    transparent !important;
+  border:        none !important;
+  box-shadow:    none !important;
+  border-radius: 0 !important;
+  padding:       0 !important;
+  margin:        0 !important;
+}
+
+.leaflet-popup {
+  filter: none !important;
+}
+
+.leaflet-popup-content {
+  width:         auto !important;
+  margin:        0 !important;
+  padding:       0 !important;
+}
+
+.leaflet-popup-tip-container,
+.leaflet-popup-tip {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.leaflet-popup-close-button {
+  display: none !important;
+}
