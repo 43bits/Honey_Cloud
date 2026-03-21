@@ -108,6 +108,10 @@ def run_ml_pipeline(log: dict) -> dict:
         'mitre_url':            mitre['url'],
         'mitre_mapped':         mitre['mitre_mapped'],
     }
+    
+    
+    
+    
 
     # Auto-trigger TI investigation for HIGH/CRITICAL
     # if result.get('risk_level') in ('HIGH', 'CRITICAL'):
