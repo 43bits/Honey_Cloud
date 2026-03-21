@@ -13,6 +13,7 @@ import threading
 import urllib.request
 import pandas as pd
 
+
 from api.attack_store import store, investigation_store
 from ml_models.feature_engineering import engineer_features_from_live_log
 from ml_models.anomaly_detection import predict_anomaly
@@ -20,7 +21,16 @@ from ml_models.attack_classifier import predict_attack_type
 from ml_models.clustering import predict_cluster
 from ml_models.risk_scorer import calculate_risk_score
 
+import os
+# from dotenv import load_dotenv
 load_dotenv()
+# Add this right after load_dotenv() in threat_api.py
+_abuse_key = os.getenv('ABUSEIPDB_API_KEY',  '').strip()
+_vt_key    = os.getenv('VIRUSTOTAL_API_KEY', '').strip()
+
+print(f"[Startup] AbuseIPDB key:  {'✓ loaded' if _abuse_key  else '✗ MISSING'}")
+print(f"[Startup] VirusTotal key: {'✓ loaded' if _vt_key    else '✗ MISSING'}")
+
 
 # ── App Setup ──────────────────────────────────────────
 app = FastAPI(
@@ -110,14 +120,57 @@ def run_ml_pipeline(log: dict) -> dict:
     }
     
     
-    
-    
+    #virus intel check line//.a.a/.a/
+    # if result.get('risk_level') in ('HIGH', 'CRITICAL'):
+    #     threading.Thread(
+    #         target=_background_enrich,
+    #         args=(result,),
+    #         daemon=True
+    #     ).start()
 
     # Auto-trigger TI investigation for HIGH/CRITICAL
     # if result.get('risk_level') in ('HIGH', 'CRITICAL'):
     #     trigger_investigation(result)
 
     return result
+
+
+
+
+# intel feature for virus check 
+def _background_enrich(attack: dict):
+    """Enriches an attack in background — does not block API."""
+    try:
+        from ai_agents.threat_intel_engine import enrich_attack
+        enriched = enrich_attack(attack)
+        # Update the stored attack with enrichment data
+        store.update_enrichment(
+            attack.get('source_ip', ''),
+            attack.get('timestamp', ''),
+            {
+                'threat_intel_score': enriched.get('threat_intel_score', 0),
+                'intel_level':        enriched.get('intel_level', 'UNKNOWN'),
+                'intel_color':        enriched.get('intel_color', '#00ffe7'),
+                'evidence':           enriched.get('evidence', []),
+                'threat_tags':        enriched.get('threat_tags', []),
+                'recommendation':     enriched.get('recommendation', ''),
+                'data_sources':       enriched.get('data_sources', []),
+                'abuseipdb':          enriched.get('abuseipdb', {}),
+                'virustotal':         enriched.get('virustotal', {}),
+                'enriched_at':        enriched.get('enriched_at', ''),
+            }
+        )
+        print(
+            f"[TI] Enrichment stored for "
+            f"{attack.get('source_ip','?')}: "
+            f"{enriched.get('intel_level','?')}"
+        )
+    except Exception as e:
+        print(f"[TI] Background enrichment failed: {e}")
+
+
+
+
 
 
 # ── TI Investigation ───────────────────────────────────
@@ -560,6 +613,156 @@ def retrain_model():
 #         "busiest_days":  day_totals.head(3).to_dict(),
 #         "total_events":  int(city_totals.sum()),
 #     }
+    
+    
+    
+    
+
+
+@app.get("/intel/{ip}")
+def get_threat_intel(ip: str):
+    from ai_agents.threat_intel_engine import (
+        query_abuseipdb,
+        query_virustotal,
+        calculate_threat_intel_score,
+    )
+
+    # Get real ML score from stored attacks
+    recent      = store.get_recent(200)
+    stored      = next(
+        (a for a in recent if a.get('source_ip') == ip), {}
+    )
+    ml_score    = int(stored.get('risk_score',  0))
+    attack_type = str(stored.get('attack_type', 'Unknown'))
+    is_anomaly  = bool(stored.get('is_anomaly', False))
+
+    print(f"[TI] IP={ip} ml_score={ml_score} "
+          f"attack={attack_type} anomaly={is_anomaly}")
+
+    abuse      = query_abuseipdb(ip)
+    virustotal = query_virustotal(ip)
+    intel      = calculate_threat_intel_score(
+        abuse         = abuse,
+        virustotal    = virustotal,
+        ml_risk_score = ml_score,
+        attack_type   = attack_type,
+        is_anomaly    = is_anomaly,
+    )
+    return {'ip': ip, **intel}
+
+
+
+@app.get("/intel/stats/summary")
+def threat_intel_summary():
+    try:
+        attacks = store.get_recent(200)
+        
+        # Debug — remove after confirming
+        print(f"[TI Summary] store has {len(attacks)} attacks")
+        
+        enriched   = [a for a in attacks
+                      if a.get('threat_intel_score') is not None]
+        confirmed  = sum(1 for a in enriched
+                         if a.get('intel_level') == 'CONFIRMED_THREAT')
+        high_conf  = sum(1 for a in enriched
+                         if a.get('intel_level') == 'HIGH_CONFIDENCE')
+        suspicious = sum(1 for a in enriched
+                         if a.get('intel_level') == 'SUSPICIOUS')
+
+        all_tags: list = []
+        for a in enriched:
+            all_tags.extend(a.get('threat_tags') or [])
+        tag_counts: dict = {}
+        for t in all_tags:
+            tag_counts[t] = tag_counts.get(t, 0) + 1
+
+        sources_active = []
+        if os.getenv('ABUSEIPDB_API_KEY',  '').strip():
+            sources_active.append('AbuseIPDB')
+        if os.getenv('VIRUSTOTAL_API_KEY', '').strip():
+            sources_active.append('VirusTotal')
+        sources_active.append('HoneyCloud ML')
+
+        return {
+            'total_attacks':       len(attacks),
+            'total_enriched':      len(enriched),
+            'confirmed_threats':   confirmed,
+            'high_confidence':     high_conf,
+            'suspicious':          suspicious,
+            'top_threat_tags':     sorted(
+                tag_counts.items(),
+                key=lambda x: x[1], reverse=True
+            )[:5],
+            'data_sources_active': sources_active,
+        }
+
+    except Exception as e:
+        import traceback
+        print(f"[TI Summary] Error: {e}")
+        traceback.print_exc()
+        return {
+            'total_attacks':       0,
+            'total_enriched':      0,
+            'confirmed_threats':   0,
+            'high_confidence':     0,
+            'suspicious':          0,
+            'top_threat_tags':     [],
+            'data_sources_active': [],
+        }       
+
+
+
+@app.get("/honeypot/stats")
+def honeypot_stats():
+    """
+    Returns adaptive honeypot behavioral statistics.
+    Shows attacker profiles and deception strategy effectiveness.
+    """
+    attacks = store.get_recent(200)
+
+    profiles    = {}
+    strategies  = {}
+    tools       = {}
+    apt_count   = 0
+    intel_count = 0
+    honeytoken_hits = 0
+
+    for a in attacks:
+        # Attacker profiles
+        ap = a.get('attacker_profile', {})
+        pt = ap.get('type', 'unknown')
+        profiles[pt] = profiles.get(pt, 0) + 1
+
+        # Deception strategies
+        dec = a.get('deception', {})
+        st  = dec.get('strategy', 'unknown')
+        strategies[st] = strategies.get(st, 0) + 1
+
+        # Intel collected
+        if dec.get('intel_collected'):
+            intel_count += 1
+        if dec.get('honeytoken_hit'):
+            honeytoken_hits += 1
+
+        # Tool signatures
+        beh  = a.get('behavioral', {})
+        tool = beh.get('tool_signature', 'unknown')
+        tools[tool] = tools.get(tool, 0) + 1
+
+        # APT count
+        if ap.get('type') == 'apt_actor':
+            apt_count += 1
+
+    return {
+        'total_sessions':    len(attacks),
+        'attacker_profiles': profiles,
+        'deception_used':    strategies,
+        'tools_detected':    tools,
+        'apt_incidents':     apt_count,
+        'intel_collected':   intel_count,
+        'honeytoken_hits':   honeytoken_hits,
+        'adaptive_enabled':  True,
+    }
     
     
 

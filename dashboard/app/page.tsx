@@ -11,6 +11,7 @@ import AttackFeed       from '@/components/AttackFeed';
 import MitreHeatmap     from '@/components/MitreHeatmap';
 import PredictionPanel  from '@/components/PredictionPanel';
 import InvestigationPanel from '@/components/InvestigationPanel';
+import ThreatIntelPanel from '@/components/ThreatIntelPanel';
 import { fetchAttacks, fetchStats, subscribeToLiveAttacks } from '@/lib/api';
 import type { Attack, Stats } from '@/lib/api';
 
@@ -193,16 +194,39 @@ export default function Dashboard() {
             </div>
 
             {/* Charts */}
-            <div className="flex-1 overflow-hidden rounded-lg"
+            {/* <div className="flex-1 overflow-hidden rounded-lg"
               style={{ width: `${rightPct}%` }}>
               <Charts
                 topAttackTypes={stats.top_attack_types}
                 topPorts={stats.top_ports}
                 topCountries={stats.top_countries}
               />
-            </div>
-          </div>
+            </div> */}
+            {/* Chart div with virus check */}
+            <div className="flex flex-col flex-1 rounded-lg overflow-hidden" style={{ width: `${rightPct}%`, gap: 12 }} >
+              {/* Charts (top right) */}
+              <div className="flex-shrink-0">
+              <Charts
+                topAttackTypes={stats.top_attack_types}
+                topPorts={stats.top_ports}
+                topCountries={stats.top_countries}
+              />
+              </div>
 
+              {/* Enrichment panel (bottom right) */}
+              <div className="flex-1 min-h-0">
+              <SectionLabel>THREAT INTELLIGENCE ENRICHMENT</SectionLabel>
+              <div className="flex-1 min-h-0">
+              <ThreatIntelPanel selectedAttack={selectedAttack as any} />
+
+              </div>
+              </div>
+            </div>
+
+            
+            
+          </div>
+                  
           {/* Height drag handle */}
           <div onMouseDown={onMouseDownH}
             className="flex items-center justify-center h-5
@@ -226,6 +250,12 @@ export default function Dashboard() {
           <SectionLabel>MITRE ATT&CK® FRAMEWORK</SectionLabel>
           <MitreHeatmap />
         </section>
+
+        {/* // Add after MITRE section, before the feed+investigation grid */}
+        {/* <section>
+          <SectionLabel>THREAT INTELLIGENCE ENRICHMENT</SectionLabel>
+          <ThreatIntelPanel selectedAttack={selectedAttack as any} />
+        </section> */}
 
         {/* ── Feed + Investigation side by side ── */}
         <section>

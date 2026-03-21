@@ -117,6 +117,20 @@ class AttackStore:
                 'by_port': {},
                 'by_country': {}
             }
+    
+    
+    #  e AttackStore class in api/attack_store.py
+
+    def update_enrichment(self, source_ip: str,timestamp: str, enrichment: dict):
+        """
+            Updates a stored attack with threat intel enrichment data.
+            Matches by source_ip + timestamp.
+        """
+        with self._lock:
+            for attack in self._attacks:
+                if (attack.get('source_ip') == source_ip and attack.get('timestamp') == timestamp):
+                    attack.update(enrichment)
+                    break
 
 
 # Global singleton — import this everywhere

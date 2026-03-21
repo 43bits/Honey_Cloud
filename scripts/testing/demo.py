@@ -120,6 +120,23 @@ def make_normal_noise(ip: str) -> dict:
     }
 # ── Demo Phases ────────────────────────────────────────
 
+def check_honeypot_running():
+    """Warn if honeypot isn't running."""
+    import socket
+    s = socket.socket()
+    s.settimeout(1)
+    try:
+        s.connect(('127.0.0.1', 2222))
+        s.close()
+        print("[✓] SSH Honeypot is running on port 2222")
+        return True
+    except Exception:
+        print("[!] SSH Honeypot NOT running")
+        print("[!] Start it with: python -m honeypots.ssh_honeypot")
+        return False
+
+
+
 def phase_0_background():
     """Normal internet background noise."""
     banner("PHASE 0  ›  BACKGROUND INTERNET TRAFFIC", '\033[92m')
@@ -273,6 +290,7 @@ def run_full_demo():
   Then press ENTER to start the demo...
     """)
     input()
+    check_honeypot_running()
     phase_0_background()
     phase_1_trickle()
     phase_2_botnet()

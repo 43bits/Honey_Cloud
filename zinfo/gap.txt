@@ -1,0 +1,61 @@
+Current:                    After Phase B:
+─────────────────────       ─────────────────────────────────
+Connect → banner → log      Connect → banner
+                            → Multi-round SSH negotiation
+                            → Collect login attempts
+                            → Fingerprint tool/behavior
+                            → Classify attacker profile
+                            → Select deception strategy
+                            → Respond adaptively
+                            → Log rich behavioral data
+                            → Send enriched event to Kafka
+
+honeypots/
+  ssh_honeypot.py           ← complete rewrite
+  behavioral_fingerprinter.py  ← NEW: analyzes patterns
+  attacker_profiler.py         ← NEW: uses ML clustering
+  adaptive_response.py         ← NEW: deception strategies
+
+
+
+
+
+
+phase b of gap
+✅ Behavioral fingerprinting     — tool detection, timing, credentials
+✅ 6 attacker profiles           — scanner → APT actor
+✅ 4 deception strategies        — deny / tarpit / fake login / full env
+✅ Honeytoken planting           — fake AWS keys, SSH keys, deploy scripts
+✅ APT correctly identified      — slow + administrator username = CRITICAL
+✅ Kafka telemetry               — rich behavioral data flowing
+✅ Log file                      — logs/ssh_adaptive.json capturing all
+✅ Adaptive requirement          — fully met for problem statement
+
+
+
+
+phase c of gap 
+
+n8n visual workflow:
+
+New CRITICAL attack detected (webhook from FastAPI)
+        ↓
+Node 1: Filter — only HIGH/CRITICAL
+        ↓  
+Node 2: AbuseIPDB lookup
+        ↓
+Node 3: VirusTotal lookup  
+        ↓
+Node 4: Decision branch
+  Score > 75 → trigger adaptive honeypot escalation
+  Score 50-75 → store + alert
+  Score < 50  → log only
+        ↓
+Node 5: POST back to FastAPI with enrichment
+        ↓
+Node 6: Dashboard updates automatically
+
+
+
+
+
