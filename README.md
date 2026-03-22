@@ -40,14 +40,6 @@
 ### SOC Dashboard — Live Attack Overview
 ![Dashboard](docs/screenshots/dashboard.png)
 
-### lstm prediction
-![Dashboard](docs/screenshots/lstm.png)
-
-
-### intel score
-![Dashboard](docs/screenshots/intel.png)
-
-
 </div>
 
 ---
