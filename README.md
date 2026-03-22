@@ -40,23 +40,6 @@
 ### SOC Dashboard — Live Attack Overview
 ![Dashboard](docs/screenshots/dashboard.png)
 
-
-### n8n Threat Intelligence Orchestration Workflow
-![n8n Workflow](docs/screenshots/workflow.png)
-
-
-### Global Attack Map — LIVE / VIEW Toggle
-![Attack Map](docs/screenshots/map.png)
-
-
-### MITRE ATT&CK Framework Heatmap
-![MITRE Heatmap](docs/screenshots/mitre.png)
-
-
-### AI Threat Intelligence Investigation Panel
-![Investigation](docs/screenshots/investigation.png)
-
-
 ### lstm prediction
 ![Dashboard](docs/screenshots/lstm.png)
 
