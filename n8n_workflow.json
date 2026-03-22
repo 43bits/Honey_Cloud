@@ -1,0 +1,134 @@
+{
+  "name": "HoneyCloud Sentinel — Threat Intel Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "honeypot-attack",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "name": "Webhook — Attack Received",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"risk_level\"]}}",
+              "operation": "contains",
+              "value2": "HIGH"
+            }
+          ]
+        }
+      },
+      "name": "Filter HIGH/CRITICAL Only",
+      "type": "n8n-nodes-base.if",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.abuseipdb.com/api/v2/check?ipAddress={{$json[\"source_ip\"]}}&maxAgeInDays=90",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Key", "value": "={{$env.ABUSEIPDB_API_KEY}}" },
+            { "name": "Accept", "value": "application/json" }
+          ]
+        }
+      },
+      "name": "AbuseIPDB Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/ip_addresses/{{$json[\"source_ip\"]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-apikey", "value": "={{$env.VIRUSTOTAL_API_KEY}}" }
+          ]
+        }
+      },
+      "name": "VirusTotal Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// HoneyCloud n8n Cross-Correlation Engine\nconst attack  = $('Webhook — Attack Received').first().json;\nconst abuse   = $('AbuseIPDB Lookup').first().json?.data   || {};\nconst vt      = $('VirusTotal Lookup').first().json?.data?.attributes || {};\n\nconst ac       = abuse.abuseConfidenceScore || 0;\nconst reports  = abuse.totalReports        || 0;\nconst stats    = vt.last_analysis_stats    || {};\nconst mv       = stats.malicious           || 0;\nconst total_e  = (stats.malicious||0)+(stats.harmless||0)+(stats.undetected||0)+(stats.suspicious||0);\nconst ratio    = total_e > 0 ? Math.round(mv/total_e*100*10)/10 : 0;\nconst rep      = vt.reputation             || 0;\nconst ml_score = attack.risk_score         || 0;\n\n// Score each source\nlet abuse_score = 0;\nif (ac >= 90) abuse_score = 45;\nelse if (ac >= 75) abuse_score = 35;\nelse if (ac >= 50) abuse_score = 24;\nelse if (ac >= 25) abuse_score = 14;\nelse if (ac >= 5)  abuse_score = 6;\nif (reports >= 500) abuse_score += 8;\nelse if (reports >= 100) abuse_score += 5;\n\nlet vt_score = 0;\nif (mv >= 20 || ratio >= 30) vt_score = 40;\nelse if (mv >= 10 || ratio >= 15) vt_score = 30;\nelse if (mv >= 5  || ratio >= 7)  vt_score = 20;\nelse if (mv >= 2  || ratio >= 3)  vt_score = 10;\nelse if (mv >= 1)                 vt_score = 5;\nif (rep <= -100) vt_score += 8;\nelse if (rep <= -50) vt_score += 5;\n\nlet ml_contrib = 0;\nif (ml_score >= 85) ml_contrib = 10;\nelse if (ml_score >= 65) ml_contrib = 7;\nelse if (ml_score >= 40) ml_contrib = 4;\n\nconst primary = Math.max(abuse_score, vt_score);\nconst secondary = Math.min(abuse_score, vt_score);\nconst corroboration = (abuse_score >= 20 && vt_score >= 15) ? 8 : (abuse_score >= 10 && vt_score >= 10) ? 4 : 0;\nconst final_score = Math.min(primary + Math.floor(secondary/3) + ml_contrib + corroboration, 100);\n\nlet intel_level, action_taken, recommendation;\nif (final_score >= 75) {\n  intel_level = 'CONFIRMED_THREAT';\n  action_taken = 'block_recommended';\n  recommendation = 'Block at perimeter firewall immediately. Correlate with breach indicators.';\n} else if (final_score >= 55) {\n  intel_level = 'HIGH_CONFIDENCE';\n  action_taken = 'watchlist_added';\n  recommendation = 'Add to watchlist. Monitor for repeated attempts.';\n} else if (final_score >= 30) {\n  intel_level = 'SUSPICIOUS';\n  action_taken = 'monitoring_increased';\n  recommendation = 'Increase logging. Re-evaluate if activity continues.';\n} else {\n  intel_level = 'LOW_RISK';\n  action_taken = 'logged';\n  recommendation = 'No action required. Logging only.';\n}\n\nreturn [{\n  json: {\n    source_ip:            attack.source_ip,\n    timestamp:            attack.timestamp,\n    n8n_threat_score:     final_score,\n    n8n_intel_level:      intel_level,\n    n8n_recommendation:   recommendation,\n    n8n_abuse_confidence: ac,\n    n8n_vt_malicious:     mv,\n    n8n_action_taken:     action_taken,\n    n8n_workflow_id:      'honeycloud-v1',\n    n8n_processed_at:     new Date().toISOString(),\n    score_breakdown: {\n      abuseipdb:      abuse_score,\n      virustotal:     vt_score,\n      ml_model:       ml_contrib,\n      corroboration:  corroboration,\n    }\n  }\n}];"
+      },
+      "name": "Cross-Correlation Engine",
+      "type": "n8n-nodes-base.code",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"n8n_threat_score\"]}}",
+              "operation": "largerEqual",
+              "value2": 75
+            }
+          ]
+        }
+      },
+      "name": "Score >= 75?",
+      "type": "n8n-nodes-base.if",
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/n8n/enrichment",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "source_ip",            "value": "={{$json[\"source_ip\"]}}" },
+            { "name": "timestamp",            "value": "={{$json[\"timestamp\"]}}" },
+            { "name": "n8n_threat_score",     "value": "={{$json[\"n8n_threat_score\"]}}" },
+            { "name": "n8n_intel_level",      "value": "={{$json[\"n8n_intel_level\"]}}" },
+            { "name": "n8n_recommendation",   "value": "={{$json[\"n8n_recommendation\"]}}" },
+            { "name": "n8n_abuse_confidence", "value": "={{$json[\"n8n_abuse_confidence\"]}}" },
+            { "name": "n8n_vt_malicious",     "value": "={{$json[\"n8n_vt_malicious\"]}}" },
+            { "name": "n8n_action_taken",     "value": "={{$json[\"n8n_action_taken\"]}}" },
+            { "name": "n8n_workflow_id",      "value": "={{$json[\"n8n_workflow_id\"]}}" },
+            { "name": "n8n_processed_at",     "value": "={{$json[\"n8n_processed_at\"]}}" }
+          ]
+        }
+      },
+      "name": "POST to HoneyCloud API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Webhook — Attack Received": {
+      "main": [[{ "node": "Filter HIGH/CRITICAL Only", "type": "main", "index": 0 }]]
+    },
+    "Filter HIGH/CRITICAL Only": {
+      "main": [
+        [{ "node": "AbuseIPDB Lookup", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "AbuseIPDB Lookup": {
+      "main": [[{ "node": "VirusTotal Lookup", "type": "main", "index": 0 }]]
+    },
+    "VirusTotal Lookup": {
+      "main": [[{ "node": "Cross-Correlation Engine", "type": "main", "index": 0 }]]
+    },
+    "Cross-Correlation Engine": {
+      "main": [[{ "node": "Score >= 75?", "type": "main", "index": 0 }]]
+    },
+    "Score >= 75?": {
+      "main": [
+        [{ "node": "POST to HoneyCloud API", "type": "main", "index": 0 }],
+        [{ "node": "POST to HoneyCloud API", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

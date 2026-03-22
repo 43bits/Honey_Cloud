@@ -46,6 +46,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class N8nEnrichment(BaseModel):
+    source_ip:           str
+    timestamp:           str
+    n8n_threat_score:    Optional[int]   = 0
+    n8n_intel_level:     Optional[str]   = 'UNKNOWN'
+    n8n_recommendation:  Optional[str]   = ''
+    n8n_abuse_confidence:Optional[int]   = 0
+    n8n_vt_malicious:    Optional[int]   = 0
+    n8n_action_taken:    Optional[str]   = 'logged'
+    n8n_workflow_id:     Optional[str]   = ''
+    n8n_processed_at:    Optional[str]   = ''
+
+
 # ── Request Model ──────────────────────────────────────
 class AttackLog(BaseModel):
     source_ip:       str
@@ -220,6 +233,42 @@ def get_ip_location(ip: str) -> dict:
     return {'lat': 0, 'lon': 0, 'country': 'Unknown', 'city': 'Unknown'}
 
 
+def _push_to_n8n(attack: dict):
+    """Push attack to n8n webhook — non-blocking."""
+    import urllib.request
+    import urllib.error
+
+    N8N_WEBHOOK = os.getenv(
+        'N8N_WEBHOOK_URL',
+        'http://localhost:5678/webhook/honeypot-attack'
+    )
+
+    payload = json.dumps({
+        'source_ip':    attack.get('source_ip', ''),
+        'attack_type':  attack.get('attack_type', ''),
+        'risk_level':   attack.get('risk_level', ''),
+        'risk_score':   attack.get('risk_score', 0),
+        'country':      attack.get('country', ''),
+        'port':         attack.get('port_targeted', 0),
+        'timestamp':    attack.get('timestamp', ''),
+        'mitre_id':     attack.get('mitre_technique_id', ''),
+        'is_anomaly':   attack.get('is_anomaly', False),
+        'campaign':     attack.get('campaign', ''),
+    }).encode()
+
+    try:
+        req = urllib.request.Request(
+            N8N_WEBHOOK,
+            data    = payload,
+            headers = {'Content-Type': 'application/json'},
+            method  = 'POST',
+        )
+        with urllib.request.urlopen(req, timeout=5) as r:
+            print(f"[n8n] Pushed {attack['source_ip']} → "
+                  f"HTTP {r.status}")
+    except Exception as e:
+        print(f"[n8n] Push failed (workflow may not be active): {e}")
+
 
 # ── Kafka Consumer Thread ──────────────────────────────
 def kafka_consumer_thread():
@@ -252,6 +301,14 @@ def kafka_consumer_thread():
                 f"{result['attack_type']} from "
                 f"{result['source_ip']}"
             )
+            
+            # ── Push HIGH/CRITICAL to n8n ──────────────
+            if result.get('risk_level') in ('HIGH', 'CRITICAL'):
+                threading.Thread(
+                    target=_push_to_n8n,
+                    args=(result,),
+                    daemon=True,
+                ).start()
 
     except Exception as e:
         print(f"[!] Kafka consumer thread error: {e}")
@@ -652,26 +709,40 @@ def get_threat_intel(ip: str):
 
 
 
+
+
 @app.get("/intel/stats/summary")
 def threat_intel_summary():
     try:
         attacks = store.get_recent(200)
-        
-        # Debug — remove after confirming
         print(f"[TI Summary] store has {len(attacks)} attacks")
-        
-        enriched   = [a for a in attacks
-                      if a.get('threat_intel_score') is not None]
-        confirmed  = sum(1 for a in enriched
-                         if a.get('intel_level') == 'CONFIRMED_THREAT')
-        high_conf  = sum(1 for a in enriched
-                         if a.get('intel_level') == 'HIGH_CONFIDENCE')
-        suspicious = sum(1 for a in enriched
-                         if a.get('intel_level') == 'SUSPICIOUS')
+
+        # Count both manual enrichment AND n8n enrichment
+        enriched = [
+            a for a in attacks
+            if a.get('threat_intel_score') is not None
+            or a.get('n8n_enriched') is True
+        ]
+        confirmed = sum(
+            1 for a in enriched
+            if a.get('intel_level') == 'CONFIRMED_THREAT'
+            or a.get('n8n_intel_level') == 'CONFIRMED_THREAT'
+        )
+        high_conf = sum(
+            1 for a in enriched
+            if a.get('intel_level') == 'HIGH_CONFIDENCE'
+            or a.get('n8n_intel_level') == 'HIGH_CONFIDENCE'
+        )
+        suspicious = sum(
+            1 for a in enriched
+            if a.get('intel_level') == 'SUSPICIOUS'
+            or a.get('n8n_intel_level') == 'SUSPICIOUS'
+        )
 
         all_tags: list = []
         for a in enriched:
-            all_tags.extend(a.get('threat_tags') or [])
+            all_tags.extend(a.get('threat_tags')     or [])
+            all_tags.extend(a.get('n8n_threat_tags') or [])
         tag_counts: dict = {}
         for t in all_tags:
             tag_counts[t] = tag_counts.get(t, 0) + 1
@@ -682,6 +753,7 @@ def threat_intel_summary():
         if os.getenv('VIRUSTOTAL_API_KEY', '').strip():
             sources_active.append('VirusTotal')
         sources_active.append('HoneyCloud ML')
+        sources_active.append('n8n Orchestration')
 
         return {
             'total_attacks':       len(attacks),
@@ -708,35 +780,35 @@ def threat_intel_summary():
             'suspicious':          0,
             'top_threat_tags':     [],
             'data_sources_active': [],
-        }       
+        }      
+        
 
 
 
 @app.get("/honeypot/stats")
 def honeypot_stats():
-    """
-    Returns adaptive honeypot behavioral statistics.
-    Shows attacker profiles and deception strategy effectiveness.
-    """
     attacks = store.get_recent(200)
 
-    profiles    = {}
-    strategies  = {}
-    tools       = {}
-    apt_count   = 0
-    intel_count = 0
+    profiles        = {}
+    strategies      = {}
+    tools           = {}
+    apt_count       = 0
+    intel_count     = 0
     honeytoken_hits = 0
+    n8n_actions     = {}
 
     for a in attacks:
-        # Attacker profiles
+        # Attacker profiles from adaptive honeypot
         ap = a.get('attacker_profile', {})
         pt = ap.get('type', 'unknown')
-        profiles[pt] = profiles.get(pt, 0) + 1
+        if pt != 'unknown':
+            profiles[pt] = profiles.get(pt, 0) + 1
 
         # Deception strategies
         dec = a.get('deception', {})
         st  = dec.get('strategy', 'unknown')
-        strategies[st] = strategies.get(st, 0) + 1
+        if st != 'unknown':
+            strategies[st] = strategies.get(st, 0) + 1
 
         # Intel collected
         if dec.get('intel_collected'):
@@ -747,24 +819,134 @@ def honeypot_stats():
         # Tool signatures
         beh  = a.get('behavioral', {})
         tool = beh.get('tool_signature', 'unknown')
-        tools[tool] = tools.get(tool, 0) + 1
+        if tool != 'unknown':
+            tools[tool] = tools.get(tool, 0) + 1
 
         # APT count
         if ap.get('type') == 'apt_actor':
             apt_count += 1
 
+        # n8n actions taken
+        action = a.get('n8n_action_taken', '')
+        if action:
+            n8n_actions[action] = n8n_actions.get(action, 0) + 1
+
+    # n8n enrichment summary
+    n8n_enriched = [a for a in attacks if a.get('n8n_enriched')]
+    n8n_confirmed = sum(
+        1 for a in n8n_enriched
+        if a.get('n8n_intel_level') == 'CONFIRMED_THREAT'
+    )
+
     return {
-        'total_sessions':    len(attacks),
-        'attacker_profiles': profiles,
-        'deception_used':    strategies,
-        'tools_detected':    tools,
-        'apt_incidents':     apt_count,
-        'intel_collected':   intel_count,
-        'honeytoken_hits':   honeytoken_hits,
-        'adaptive_enabled':  True,
+        'total_sessions':     len(attacks),
+        'attacker_profiles':  profiles  or {'note': 'Populated by adaptive honeypot'},
+        'deception_used':     strategies or {'note': 'Populated by adaptive honeypot'},
+        'tools_detected':     tools      or {'note': 'Populated by adaptive honeypot'},
+        'apt_incidents':      apt_count,
+        'intel_collected':    intel_count,
+        'honeytoken_hits':    honeytoken_hits,
+        'adaptive_enabled':   True,
+        # n8n orchestration stats
+        'n8n_orchestration': {
+            'total_enriched':   len(n8n_enriched),
+            'confirmed_threats': n8n_confirmed,
+            'actions_taken':    n8n_actions,
+            'workflow':         'honeycloud-sentinel-v1',
+            'active':           True,
+        },
     }
     
-    
 
 
 
+
+# n8n 
+# Add to api/threat_api.py
+
+
+
+@app.post("/n8n/enrichment")
+def receive_n8n_enrichment(data: N8nEnrichment):
+    """
+    Receives enrichment results back from n8n workflow.
+    n8n calls this after completing its orchestration pipeline.
+    """
+    enrichment = {
+        'n8n_threat_score':     data.n8n_threat_score,
+        'n8n_intel_level':      data.n8n_intel_level,
+        'n8n_recommendation':   data.n8n_recommendation,
+        'n8n_abuse_confidence': data.n8n_abuse_confidence,
+        'n8n_vt_malicious':     data.n8n_vt_malicious,
+        'n8n_action_taken':     data.n8n_action_taken,
+        'n8n_workflow_id':      data.n8n_workflow_id,
+        'n8n_processed_at':     data.n8n_processed_at,
+        'n8n_enriched':         True,
+    }
+
+    # Update the stored attack
+    store.update_enrichment(
+        data.source_ip,
+        data.timestamp,
+        enrichment,
+    )
+
+    print(
+        f"[n8n] Enrichment received for {data.source_ip}: "
+        f"{data.n8n_intel_level} "
+        f"(score={data.n8n_threat_score}, "
+        f"action={data.n8n_action_taken})"
+    )
+
+    return {'status': 'ok', 'ip': data.source_ip}
+
+
+@app.post("/n8n/webhook/attack")
+def n8n_attack_webhook(log: AttackLog):
+    """
+    Webhook that triggers n8n workflow for HIGH/CRITICAL attacks.
+    n8n polls this or we push to n8n's webhook URL.
+    """
+    result = run_ml_pipeline(log.dict())
+    store.add(result)
+
+    # Push to n8n if HIGH or CRITICAL
+    if result.get('risk_level') in ('HIGH', 'CRITICAL'):
+        threading.Thread(
+            target=_push_to_n8n,
+            args=(result,),
+            daemon=True,
+        ).start()
+
+    return result
+
+
+
+
+@app.get("/n8n/status")
+def n8n_status():
+    """Check n8n connection and workflow status."""
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(
+            'http://localhost:5678/healthz'
+        )
+        with urllib.request.urlopen(req, timeout=3) as r:
+            n8n_alive = r.status == 200
+    except Exception:
+        n8n_alive = False
+
+    attacks    = store.get_recent(200)
+    n8n_processed = sum(
+        1 for a in attacks if a.get('n8n_enriched')
+    )
+
+    return {
+        'n8n_running':     n8n_alive,
+        'n8n_url':         'http://localhost:5678',
+        'webhook_url':     'http://localhost:5678/webhook/honeypot-attack',
+        'callback_url':    'http://localhost:8000/n8n/enrichment',
+        'n8n_processed':   n8n_processed,
+        'total_attacks':   len(attacks),
+    }

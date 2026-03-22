@@ -317,15 +317,13 @@ export default function ThreatIntelPanel({
 
   return (
     <div
-      className="rounded overflow-hidden flex flex-col"
-  
-// ✅ AFTER
-style={{
-  border:     '1px solid rgba(0,255,231,0.12)',
-  background: 'rgba(0,0,0,0.4)',
-  height:     '100%',
-  minHeight:  '0',
-}}>
+  className="rounded overflow-hidden flex flex-col"
+  style={{
+    border:     '1px solid rgba(0,255,231,0.12)',
+    background: 'rgba(0,0,0,0.4)',
+    height:     '100%',
+    minHeight:  '0',
+  }}>
 
       {/* ── Header ── */}
       <div
