@@ -3,7 +3,6 @@
 # 🛡️ HoneyCloud Sentinel
 
 ### AI-Driven Adaptive Honeypot Intelligence Platform
-### for Real-Time Cyber Threat Detection
 
 *Turning attacker behavior into actionable cyber intelligence.*
 
@@ -12,18 +11,21 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14+-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![Kafka](https://img.shields.io/badge/Apache_Kafka-3.0+-231F20?style=for-the-badge&logo=apachekafka&logoColor=white)](https://kafka.apache.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.0+-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
+[![n8n](https://img.shields.io/badge/n8n-Orchestration-EA4B71?style=for-the-badge&logo=n8n&logoColor=white)](https://n8n.io)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 ---
 
-**Trained on 14.2 million real-world attack records from 4 honeypot datasets**
+**Trained on 14.2 Million Real-World Attack Records from 4 Honeypot Datasets**
 
 [Features](#-features) •
-[Architecture](#-architecture) •
-[Quick Start](#-quick-start) •
+[Architecture](#-system-architecture) •
 [Screenshots](#-screenshots) •
-[ML Models](#-ml-models) •
-[API](#-api-endpoints)
+[Quick Start](#-quick-start) •
+[ML Models](#-ml--ai-engine) •
+[Datasets](#-training-dataset) •
+[API](#-api-endpoints) •
+[n8n Workflow](#-n8n-orchestration)
 
 </div>
 
@@ -34,16 +36,16 @@
 <div align="center">
 
 ### SOC Dashboard — Live Attack Overview
-![Dashboard](docs/screenshots/dashboard.png)
+![Dashboard Overview](docs/screenshots/dashboard.png)
 
-### Global Attack Map — Real-time Geolocation
+### n8n Threat Intelligence Orchestration Workflow
+![n8n Workflow](docs/screenshots/workflow.png)
+
+### Global Attack Map — Real-time Geolocation + LIVE/VIEW Toggle
 ![Attack Map](docs/screenshots/map.png)
 
-### MITRE ATT&CK Framework Heatmap
-![MITRE Heatmap](docs/screenshots/mitre.png)
-
 ### AI Threat Intelligence Investigation Panel
-![Investigation](docs/screenshots/investigation.png)
+![Investigation Panel](docs/screenshots/investigation.png)
 
 </div>
 
@@ -51,99 +53,164 @@
 
 ## 🌟 Overview
 
-HoneyCloud Sentinel is a production-grade cybersecurity platform that
-deploys AI-powered honeypots to attract, detect, analyze, and predict
-cyber attacks in real time.
+HoneyCloud Sentinel is a **production-grade cybersecurity platform** that deploys AI-powered adaptive honeypots to attract, detect, analyze, and predict cyber attacks in real time.
 
-The system captures attacker behavior through decoy services, streams
-attack data through Apache Kafka, runs four ML models for classification
-and anomaly detection, maps every attack to the MITRE ATT&CK framework,
-and displays everything on a live SOC-grade dashboard with a global
-attack map.
+The system captures attacker behavior through intelligent decoy services, streams attack data through Apache Kafka, runs four ML models trained on **14.2 million real attacks**, automatically enriches every threat through a live multi-source intelligence pipeline, maps attacks to the MITRE ATT&CK framework, and displays everything on a professional SOC-grade dashboard.
 
-> Built for the National Level Hackathon — Blue Team Challenge
+> **National Level Hackathon — Blue Team Challenge**
+> Addresses all problem statement requirements including adaptive honeypots, ML threat detection, real-time visualization, threat intelligence provider collaboration, and AI orchestration frameworks.
 
 ---
 
 ## ✨ Features
 
-### 🔴 Real-Time Detection
-- **SSH Honeypot** — captures brute force and credential attacks
-- **Kafka streaming pipeline** — zero-latency attack log processing
-- **IP Geolocation** — maps every attacker to country and city on a live map
-- **Server-Sent Events** — dashboard updates instantly without polling
+### 🔴 Adaptive Honeypot Engine *(Phase B)*
+- **SSH Honeypot** with 4 intelligent deception strategies
+- **Behavioral Fingerprinter** — detects Hydra, Medusa, Nmap, Metasploit, Paramiko
+- **Attacker Profiler** — classifies into 6 profiles: Scanner, Script Kiddie, Botnet, Credential Stuffer, Targeted, APT Actor
+- **Dynamic Response Selection** — deny fast / tarpit / fake login / full fake environment
+- **Honeytoken Planting** — fake AWS keys, SSH keys, deploy scripts to trap APT actors
+- **Command Intelligence** — collects every command run in fake shell sessions
 
-### 🤖 AI/ML Engine
-- **Isolation Forest** — detects zero-day and anomalous attacks
-- **Random Forest** — classifies 9 attack types with confidence scores
-- **K-Means Clustering** — groups attacks into 8 campaign clusters
-- **LSTM Neural Network** — predicts the next likely attack from sequences
+### 🤖 ML / AI Engine *(Phase 4 + Phase 11)*
+- **Isolation Forest** — zero-day anomaly detection, no prior rules needed
+- **Random Forest** — 9-class attack classifier, 100% test accuracy
+- **K-Means Clustering** — 8 campaign clusters, identifies coordinated botnets
+- **LSTM Neural Network** — predicts next likely attack from sequence of 10
+- Trained on **14,201,973 real attack records** from 4 datasets
+
+### 🌐 n8n Orchestration Pipeline *(Phase C)*
+- Visual workflow: Webhook → Filter → AbuseIPDB → VirusTotal → Cross-Correlation → Decision → Callback
+- Automatically processes every HIGH/CRITICAL attack
+- Cross-correlates 3 independent sources into single Threat Intel Score (0–100)
+- Sends enrichment back to FastAPI — dashboard updates live
+- 65+ attacks enriched automatically per demo run
+
+### 🔍 Threat Intelligence Enrichment *(Phase A)*
+- **AbuseIPDB** — community abuse reports, confidence scoring
+- **VirusTotal** — 94-engine malware detection
+- **HoneyCloud ML** — behavioral cross-correlation from 14.2M trained model
+- 4-tier classification: CONFIRMED THREAT / HIGH CONFIDENCE / SUSPICIOUS / LOW RISK
+- Evidence chain with numbered findings for each enrichment
+- Score breakdown showing contribution from each source
 
 ### 🎯 MITRE ATT&CK Integration
-- Every attack mapped to official framework techniques automatically
+- Every attack auto-mapped to official framework technique
 - Interactive heatmap showing active tactics in real time
 - Clickable technique IDs linking to attack.mitre.org
+- Covers 9 attack classes across 5 MITRE tactics
 
-### 🕵️ Multi-Agent Threat Intelligence
-- **Agent 1** — Log Analyzer: extracts IoCs from raw attack data
+### 🕵️ Multi-Agent Threat Investigation
+- **Agent 1** — Log Analyzer: extracts IoCs
 - **Agent 2** — Threat Investigator: identifies campaigns and actors
 - **Agent 3** — Risk Analyst: assesses business impact
-- **Agent 4** — Response Recommender: generates executable actions
-- Powered by **Groq API** (Llama 3.3 70B) — free tier
+- **Agent 4** — Response Recommender: 5 executable actions
+- Powered by **Groq API** (Llama 3.3 70B) — on-demand, no auto-calls
 
 ### 📊 SOC Dashboard
-- Dark military-ops aesthetic with scanline overlay
-- Resizable world map with animated attack lines
-- Global Honeypot Network panel (Hornet 40 — 8 locations, 40 days)
-- LSTM attack prediction with confidence bars
+- Dark military-ops aesthetic — JetBrains Mono + Rajdhani fonts
+- Resizable world map with **LIVE** (real-time attack lines) / **VIEW** (fly-to selected attack) toggle
+- Custom React popup cards — no Leaflet white borders
+- Attack feed with clickable rows → highlights map + opens investigation
+- MITRE ATT&CK heatmap with drill-down
+- LSTM prediction panel with confidence bars
+- n8n status indicator in header
 - One-click AI threat report (HTML + PDF)
 
 ### 📄 AI Report Generator
-- **HTML report** — dark SOC theme with SVG risk gauge and charts
-- **PDF download** — professional threat intelligence document
-- LLM-written analysis covering 7 sections including IoCs
+- HTML report — dark SOC theme, SVG risk gauge, bar charts, IoC section
+- PDF download — professional threat intelligence document
+- LLM-written 7-section analysis: Executive Summary, Threat Analysis, Anomaly Findings, Campaign Attribution, Risk Assessment, Recommendations, IoCs
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
+
 ```
-Internet Attackers
-        │
-        ▼
-┌─────────────────────┐
-│   Honeypot Layer    │  SSH · HTTP · FTP · IoT · Database
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   Apache Kafka      │  High-throughput log streaming
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   ML Engine         │  Isolation Forest · Random Forest · K-Means
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   MITRE ATT&CK      │  Maps every attack to framework techniques
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   Multi-Agent AI    │  4-agent TI pipeline via Groq LLM
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   LSTM Predictor    │  Predicts next attack from sequence
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   SOC Dashboard     │  Next.js · Live map · MITRE heatmap
-└─────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     ATTACKER LAYER                              │
+│         Internet Attackers → Port 2222 (SSH Honeypot)          │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────┐
+│                  ADAPTIVE HONEYPOT ENGINE                        │
+│  Behavioral Fingerprinter → Attacker Profiler → Response Engine │
+│  Strategies: deny_fast | slow_response | fake_success | full_env│
+└──────────────────────────────┬──────────────────────────────────┘
+                               │ Kafka Topic: honeypot-attacks
+┌──────────────────────────────▼──────────────────────────────────┐
+│                    APACHE KAFKA                                  │
+│              High-throughput log streaming                       │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────┐
+│                     ML ENGINE (FastAPI)                          │
+│  Isolation Forest → Random Forest → K-Means → Risk Scorer       │
+│  MITRE Mapper → Geo Location → Timestamp                        │
+└───────────────┬──────────────────────────┬──────────────────────┘
+                │ HIGH/CRITICAL            │ All attacks
+┌───────────────▼──────────────┐  ┌───────▼──────────────────────┐
+│     n8n ORCHESTRATION        │  │      ATTACK STORE             │
+│  Webhook → AbuseIPDB         │  │   Thread-safe deque(200)      │
+│  → VirusTotal → ML Score     │  │   REST API endpoints          │
+│  → Cross-Correlation         │  └───────┬──────────────────────┘
+│  → Decision → Callback       │          │
+└───────────────┬──────────────┘          │
+                │ Enrichment              │
+┌───────────────▼──────────────────────── ▼──────────────────────┐
+│                  4-AGENT TI PIPELINE (On demand)                 │
+│  Log Analyzer → Threat Investigator → Risk Analyst → Response   │
+│  Powered by: Groq API (Llama 3.3 70B)                          │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────┐
+│              SOC DASHBOARD (Next.js 14)                          │
+│  Live Map · MITRE Heatmap · Attack Feed · Investigation Panel   │
+│  Threat Intel Panel · LSTM Prediction · n8n Status Indicator    │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 🌐 n8n Orchestration
+
+The n8n visual workflow automatically processes every HIGH/CRITICAL attack through a professional threat intelligence pipeline:
+
+```
+Webhook (Attack Received)
+        ↓
+Filter: HIGH/CRITICAL only
+        ↓
+AbuseIPDB Lookup
+  → Community abuse reports
+  → Confidence score (0-100%)
+  → Reporter count, ISP, usage type
+        ↓
+VirusTotal Lookup
+  → 94 antivirus engine scan
+  → Malicious/suspicious/clean votes
+  → Community reputation score
+        ↓
+Cross-Correlation Engine (JavaScript)
+  → AbuseIPDB score: max 45 pts
+  → VirusTotal score: max 40 pts
+  → ML model score:  max 15 pts
+  → Corroboration bonus: +8 pts
+  → Final Threat Intel Score: 0-100
+        ↓
+Decision Branch
+  Score ≥ 75 → CONFIRMED THREAT → block_recommended
+  Score ≥ 55 → HIGH CONFIDENCE → watchlist_added
+  Score ≥ 30 → SUSPICIOUS      → monitoring_increased
+  Score < 30 → LOW RISK        → logged
+        ↓
+POST /n8n/enrichment → FastAPI
+  → Attack store updated
+  → Dashboard reflects enrichment
+  → n8n_processed counter increments
+```
+
+**Result:** Every HIGH/CRITICAL attack is automatically enriched with real threat database data. No manual intervention required.
 
 ---
 
@@ -151,22 +218,73 @@ Internet Attackers
 
 | Dataset | Rows | Type | Source |
 |---|---|---|---|
-| CIC Honeynet 2023 | 13,767,678 | Real network pcap | ciciot.unb.ca |
+| CIC Honeynet 2023 | 13,767,678 | Real network pcap (34 files) | ciciot.unb.ca |
 | AWS Honeypot | 406,766 | Cloud honeypot logs | Kaggle |
 | Dionaea Honeypot | 27,529 | Malware honeypot | Kaggle |
-| Hornet 40 | 8 locations · 40 days | Geographic stats | Mendeley |
+| Hornet 40 | 8 locations · 40 days | Geographic honeypot stats | Mendeley |
 | **TOTAL** | **14,201,973** | **4 real-world sources** | |
+
+### CIC Honeynet Processing Pipeline
+```bash
+# Extract packets from .pcap files
+python -m scripts.extract_pcap_full      # Phase 2.2 — all 34 files
+
+# Merge all datasets
+python scripts/merge_datasets.py          # AWS + Dionaea
+python -m scripts.merge_with_cic          # Add CIC test
+python -m scripts.merge_cic_full          # Final unified dataset
+
+# Train all models
+python scripts/train_all_models.py        # RF + IF + KMeans
+python scripts/train_lstm.py              # LSTM predictor
+```
+
+---
+
+## 🧠 ML / AI Engine
+
+### Isolation Forest — Anomaly Detection
+Detects zero-day attacks with no prior rules. Trained on 14.2M samples with `contamination=0.1`. Flags behavioral deviations from baseline honeypot traffic.
+
+### Random Forest — Attack Classifier (9 Classes)
+
+| Attack Class | MITRE Technique | Training Samples |
+|---|---|---|
+| Port Scan / Other | T1046 | 12,031,938 |
+| Web Exploit | T1190 | 1,016,332 |
+| SSH Brute Force | T1110.001 | 430,281 |
+| Database Attack | T1078.001 | 277,202 |
+| Telnet Attack | T1021.004 | 194,055 |
+| DNS Attack | T1071.004 | 128,538 |
+| SMB Attack | T1021.002 | 81,510 |
+| FTP Attack | T1071.002 | 31,248 |
+| Email Attack | T1566.001 | 10,869 |
+
+### K-Means Clustering — Campaign Detection
+8 clusters identifying coordinated attack campaigns. Groups attacks by behavioral similarity to detect botnets and APT campaigns.
+
+### LSTM Neural Network — Attack Prediction
+Sequence length: 10 attacks. Architecture: `Embedding(16) → LSTM(64) → Dropout(0.2) → LSTM(32) → Dropout(0.2) → Dense(softmax)`. Predicts next likely attack type with probability distribution.
+
+### Risk Scorer — 4-Tier Classification
+```
+login_attempts ≤ 2 AND connection_rate ≤ 3.0 → LOW (background noise)
+Otherwise:
+  Attack type weight + Confidence boost + Anomaly boost + Port boost
+  → Score 0-100 → LOW / MEDIUM / HIGH / CRITICAL
+```
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- Docker Desktop
-- Git
-- Free Groq API key — [console.groq.com](https://console.groq.com)
+```
+Python 3.10+    Node.js 18+    Docker Desktop    Git
+Groq API key    AbuseIPDB API key    VirusTotal API key
+```
+
+All three API keys are **free** with no credit card required.
 
 ### 1. Clone
 ```bash
@@ -174,7 +292,7 @@ git clone https://github.com/YOUR_USERNAME/HoneyCloud-Sentinel.git
 cd HoneyCloud-Sentinel
 ```
 
-### 2. Python environment
+### 2. Python Environment
 ```bash
 python -m venv venv
 
@@ -187,77 +305,123 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Environment variables
+### 3. Environment Variables
 ```bash
 cp .env.example .env
-# Add your GROQ_API_KEY from console.groq.com (free)
 ```
 
-### 4. Start Kafka
+Edit `.env`:
+```env
+GROQ_API_KEY=your-groq-key-here
+ABUSEIPDB_API_KEY=your-abuseipdb-key-here
+VIRUSTOTAL_API_KEY=your-virustotal-key-here
+N8N_WEBHOOK_URL=http://localhost:5678/webhook/honeypot-attack
+```
+
+### 4. Start Infrastructure
 ```bash
+# Kafka + Zookeeper + n8n
 docker-compose up -d
+
+# Verify all running
+docker-compose ps
 ```
 
-### 5. Train ML models
+### 5. Train ML Models
 ```bash
+# Download datasets first (see datasets/README.md for links)
+
+# Process CIC Honeynet pcap files
+python -m scripts.extract_pcap_full
+
+# Merge all datasets
+python scripts/merge_datasets.py
+python -m scripts.merge_cic_full
+
+# Train models (~5 minutes)
 python scripts/train_all_models.py
 python scripts/train_lstm.py
+
+# Verify
+python scripts/diagnose.py
 ```
 
-### 6. Start API
+### 6. Import n8n Workflow
+```
+1. Open http://localhost:5678
+2. New Workflow → ⋯ menu → Import from JSON
+3. Paste contents of n8n_workflow.json
+4. Add your API keys in AbuseIPDB and VirusTotal nodes
+5. Save → Activate (green toggle)
+```
+
+### 7. Start API
 ```bash
-uvicorn api.threat_api:app --reload --host 0.0.0.0 --port 8000
+uvicorn api.threat_api:app --host 0.0.0.0 --port 8000
 ```
 
-### 7. Start dashboard
+### 8. Start Dashboard
 ```bash
 cd dashboard
 npm install
 npm run dev
 ```
 
-### 8. Run the demo
+### 9. Start Adaptive Honeypot
 ```bash
-python scripts/demo.py
+python -m honeypots.ssh_honeypot
+```
+
+### 10. Run Demo
+```bash
+python scripts/demo.py          # Full 5-phase demo (~3 min)
+python scripts/demo.py --quick  # Quick 30-second demo
 ```
 
 Open **http://localhost:3000**
 
 ---
 
-## 🧠 ML Models
+## 🎬 Demo Script
 
-### Isolation Forest — Anomaly Detection
-Trained on 14.2M real honeypot attacks. Detects unusual patterns
-that don't match known attack behavior — effective for zero-day detection.
-Flags attacks with anomaly scores for heightened investigation priority.
+```bash
+python scripts/demo.py
+```
 
-### Random Forest — Attack Classifier
-Classifies attacks into 9 categories using port-based and
-behavioral features. Trained on 3 real-world honeypot sources.
-Achieves 100% accuracy on test set (deterministic port-based labels).
+| Phase | What Happens | Expected Risk |
+|---|---|---|
+| 0 | Background internet noise | LOW — correctly filtered |
+| 1 | Slow reconnaissance scans | MEDIUM — port scan detected |
+| 2 | Botnet wave — 20 coordinated IPs | HIGH — campaign clustered |
+| 3 | APT scenario — multi-vector same IP | CRITICAL — anomaly flagged |
+| 4 | Mass attack flood — 40 rapid attacks | CRITICAL — feed scrolling |
+| 5 | Database breach — 3 simultaneous IPs | CRITICAL — MITRE mapped |
 
-| Class | Training Samples |
-|---|---|
-| Port Scan / Other | 12,031,938 |
-| Web Exploit | 1,016,332 |
-| SSH Brute Force | 430,281 |
-| Database Attack | 277,202 |
-| Telnet Attack | 194,055 |
-| DNS Attack | 128,538 |
-| SMB Attack | 81,510 |
-| FTP Attack | 31,248 |
-| Email Attack | 10,869 |
+Reset between runs:
+```bash
+curl -X DELETE http://localhost:8000/attacks/clear
+```
 
-### K-Means Clustering — Campaign Detection
-Groups attacks with similar behavioral patterns to identify
-coordinated botnet campaigns and repeated attacker strategies.
-8 clusters including SSH Brute Force, SMB, and Web Exploit campaigns.
+---
 
-### LSTM Neural Network — Attack Prediction
-Learns temporal attack sequences to predict the next likely
-attack type. Uses last 10 attacks as input, outputs probability
-distribution across all 9 attack classes with confidence score.
+## 🐝 Adaptive Honeypot Strategies
+
+| Attacker Profile | Detection | Strategy | Purpose |
+|---|---|---|---|
+| Scanner | Single hit, fast | `deny_fast` | Don't waste resources |
+| Script Kiddie | Bot, wordlist | `deny_fast` | Reject immediately |
+| Botnet Node | Rapid, coordinated | `slow_response` | Tarpit — waste CPU |
+| Credential Stuffer | Many user:pass combos | `fake_success` | Collect credentials used |
+| Targeted Attacker | Human timing, specific users | `fake_success` | Collect TTPs |
+| APT Actor | Slow, deliberate, admin users | `full_fake_env` | Maximum intelligence |
+
+### Honeytokens Planted (Full Fake Environment)
+```
+credentials.txt  → Fake AWS access key + secret
+.ssh/id_rsa      → Fake RSA private key
+deploy.sh        → Fake database credentials + internal IPs
+```
+When accessed, honeytoken hit is logged and flagged in dashboard.
 
 ---
 
@@ -267,88 +431,102 @@ distribution across all 9 attack classes with confidence score.
 |---|---|---|
 | GET | `/` | API info |
 | GET | `/health` | System health |
-| POST | `/analyze` | Analyze attack through ML |
-| GET | `/attacks` | Recent attacks |
+| POST | `/analyze` | Analyze attack through ML pipeline |
+| GET | `/attacks` | Recent attacks (newest first) |
 | GET | `/stats` | Aggregated statistics |
 | GET | `/live` | SSE real-time stream |
+| DELETE | `/attacks/clear` | Reset attack store |
 | GET | `/mitre/heatmap` | ATT&CK tactic frequency |
 | GET | `/mitre/detail/{type}` | Full MITRE entry |
 | GET | `/investigations` | TI agent reports |
-| POST | `/investigate` | Trigger TI investigation |
-| GET | `/predict/next` | LSTM prediction |
+| POST | `/investigate` | Trigger AI investigation (force=True) |
+| GET | `/predict/next` | LSTM next attack prediction |
 | POST | `/predict/train` | Retrain LSTM |
-| GET | `/stats/geographic` | Hornet 40 geo stats |
-| GET | `/report/html` | Visual HTML report |
+| GET | `/report/html` | Visual HTML threat report |
 | GET | `/report/generate` | Download PDF report |
-| DELETE | `/attacks/clear` | Reset store |
+| GET | `/intel/{ip}` | Manual threat intel lookup |
+| GET | `/intel/stats/summary` | Enrichment statistics |
+| POST | `/n8n/enrichment` | n8n enrichment callback |
+| GET | `/n8n/status` | n8n pipeline status |
+| GET | `/honeypot/stats` | Adaptive honeypot statistics |
 
 **Interactive docs:** http://localhost:8000/docs
 
 ---
 
 ## 📁 Project Structure
+
 ```
 HoneyCloud-Sentinel/
 │
 ├── api/
-│   ├── threat_api.py           # FastAPI — all 16 endpoints
-│   └── attack_store.py         # Thread-safe attack store
+│   ├── threat_api.py              # FastAPI — 19 endpoints
+│   └── attack_store.py            # Thread-safe attack + investigation store
 │
 ├── honeypots/
-│   └── ssh_honeypot.py         # SSH decoy service
-│
-├── data_pipeline/
-│   ├── kafka_producer.py
-│   └── kafka_consumer.py
+│   ├── ssh_honeypot.py            # Adaptive SSH honeypot (Phase B)
+│   ├── behavioral_fingerprinter.py # Tool detection + timing analysis
+│   ├── attacker_profiler.py        # ML-based profile classifier
+│   └── adaptive_response.py        # 4 deception strategy engines
 │
 ├── ml_models/
-│   ├── feature_engineering.py  # 7-feature extractor
-│   ├── anomaly_detection.py    # Isolation Forest
-│   ├── attack_classifier.py    # Random Forest (9 classes)
-│   ├── clustering.py           # K-Means (8 clusters)
-│   ├── risk_scorer.py          # 0-100 risk scoring
-│   └── attack_predictor.py     # LSTM prediction
+│   ├── feature_engineering.py     # 7-feature extractor
+│   ├── anomaly_detection.py       # Isolation Forest
+│   ├── attack_classifier.py       # Random Forest (9 classes)
+│   ├── clustering.py              # K-Means (8 clusters)
+│   ├── risk_scorer.py             # 0-100 behavioral risk scoring
+│   └── PredictionEngine/
+│       └── attack_predictor.py    # LSTM sequence predictor
 │
 ├── ai_agents/
-│   ├── mitre_mapper.py         # MITRE ATT&CK mapping
-│   ├── threat_intelligence_agent.py  # 4-agent pipeline
-│   ├── threat_report_agent.py  # Groq LLM writer
-│   ├── html_report_generator.py
-│   └── pdf_generator.py
+│   ├── mitre_mapper.py            # MITRE ATT&CK lookup table
+│   ├── threat_intel_engine.py     # AbuseIPDB + VT + ML enrichment
+│   ├── threat_intelligence_agent.py # 4-agent Groq pipeline
+│   ├── threat_report_agent.py     # LLM report writer
+│   ├── html_report_generator.py   # Dark SOC HTML report
+│   └── pdf_generator.py           # ReportLab PDF generator
 │
-├── dashboard/                  # Next.js 14 frontend
+├── dashboard/                     # Next.js 14 frontend
 │   ├── app/
-│   │   ├── page.tsx            # Main dashboard
-│   │   └── globals.css         # Dark SOC theme
+│   │   ├── page.tsx               # Main SOC dashboard
+│   │   ├── globals.css            # Dark military theme
+│   │   └── layout.tsx
 │   └── components/
-│       ├── Header.tsx
-│       ├── StatCards.tsx
-│       ├── AttackMap.tsx       # Leaflet world map
-│       ├── GlobalHoneypotNetwork.tsx
-│       ├── Charts.tsx
-│       ├── MitreHeatmap.tsx
-│       ├── PredictionPanel.tsx
-│       ├── InvestigationPanel.tsx
-│       ├── AttackFeed.tsx
-│       └── ReportButton.tsx
+│       ├── Header.tsx             # n8n status + LIVE indicator
+│       ├── StatCards.tsx          # CRITICAL/HIGH/MEDIUM/LOW cards
+│       ├── AttackMap.tsx          # Leaflet map + LIVE/VIEW toggle
+│       ├── Charts.tsx             # Attack type + country charts
+│       ├── MitreHeatmap.tsx       # Interactive ATT&CK heatmap
+│       ├── AttackFeed.tsx         # Clickable live attack feed
+│       ├── InvestigationPanel.tsx # 4-agent AI investigation
+│       ├── ThreatIntelPanel.tsx   # n8n + AbuseIPDB + VT display
+│       ├── PredictionPanel.tsx    # LSTM prediction engine
+│       └── ReportButton.tsx       # HTML + PDF report buttons
 │
 ├── scripts/
-│   ├── demo.py                 # 5-phase attack demo
-│   ├── train_all_models.py     # Train RF + IF + KMeans
-│   ├── train_lstm.py           # Train LSTM
-│   ├── extract_pcap_test.py    # CIC Phase 2.1
-│   ├── extract_pcap_full.py    # CIC Phase 2.2
-│   ├── merge_datasets.py       # AWS + Dionaea merge
-│   ├── merge_with_cic.py       # Add CIC test data
-│   └── merge_cic_full.py       # Final dataset merge
+│   ├── demo.py                    # 5-phase attack demonstration
+│   ├── train_all_models.py        # Train RF + IF + KMeans
+│   ├── train_lstm.py              # Train LSTM predictor
+│   ├── extract_pcap_test.py       # CIC Phase 2.1 (3 test files)
+│   ├── extract_pcap_full.py       # CIC Phase 2.2 (all 34 files)
+│   ├── merge_datasets.py          # AWS + Dionaea merge
+│   ├── merge_with_cic.py          # Add CIC test data
+│   ├── merge_cic_full.py          # Final unified dataset
+│   ├── fix_dionaea.py             # Fix corrupted CSV headers
+│   └── diagnose.py                # System health check
 │
 ├── datasets/
-│   └── README.md               # Download links
+│   └── README.md                  # Dataset download links
 │
 ├── docs/
-│   └── screenshots/            # Dashboard screenshots
+│   └── screenshots/               # Dashboard screenshots
 │
-├── docker-compose.yml
+├── logs/
+│   └── ssh_adaptive.json          # Adaptive honeypot session logs
+│
+├── models/                        # Trained model files (.pkl, .keras)
+├── n8n_workflow.json              # Import into n8n directly
+├── docker-compose.yml             # Kafka + Zookeeper + n8n
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -356,63 +534,76 @@ HoneyCloud-Sentinel/
 
 ---
 
-## 🎬 Demo
-```bash
-python scripts/demo.py          # Full 5-phase demo (~3 min)
-python scripts/demo.py --quick  # Quick 30-second demo
-```
+## 🛠️ Tech Stack
 
-| Phase | What Happens | Time |
+| Layer | Technology | Purpose |
 |---|---|---|
-| 0 | Background internet noise — LOW risk baseline | 15s |
-| 1 | Initial reconnaissance — slow port scans | 15s |
-| 2 | Botnet campaign — 20 coordinated IPs | 10s |
-| 3 | APT scenario — same IP, multiple vectors | 20s |
-| 4 | Mass attack flood — 40 rapid mixed attacks | 8s |
-| 5 | Critical DB breach — 3 simultaneous hits | 5s |
-
-Reset between runs:
-```bash
-curl -X DELETE http://localhost:8000/attacks/clear
-```
+| Honeypot | Python sockets | Adaptive SSH decoy |
+| Streaming | Apache Kafka 3.0 | High-throughput event pipeline |
+| Orchestration | n8n | Visual threat intel workflow |
+| Backend | Python 3.10, FastAPI | 19 REST endpoints |
+| ML | Scikit-learn, TensorFlow | 4 trained models |
+| AI Pipeline | Groq API, Llama 3.3 70B | On-demand investigation |
+| Threat Intel | AbuseIPDB, VirusTotal | Live IP reputation |
+| Frontend | Next.js 14, Tailwind | SOC dashboard |
+| Visualization | Recharts, Leaflet | Charts + world map |
+| Reports | ReportLab, HTML/CSS | PDF + HTML generation |
+| DevOps | Docker, Docker Compose | Container orchestration |
+| Framework | MITRE ATT&CK | Threat classification |
 
 ---
 
 ## 🔐 Ethical Considerations
 
-- Honeypots only simulate vulnerable environments
-- No real user data is exposed
-- Malware isolated in sandboxed environments
-- Attack data anonymized before sharing
+- Honeypots simulate vulnerable environments — no real systems exposed
 - No offensive actions taken against attackers
-- Complies with responsible cybersecurity research
+- Attack data anonymized in reports
+- Malware isolated in sandboxed honeypot environment
+- Complies with responsible cybersecurity research standards
+- API keys stored in `.env` — never committed to repository
 
 ---
 
-## 🔮 Future Work
+## 🔮 Future Roadmap
 
-1. **T-Pot Integration** — connect to real cloud honeypot platform
-2. **Global Honeypot Network** — deploy across multiple cloud regions
-3. **CERT-In Integration** — share threat signatures nationally
-4. **Full MITRE Coverage** — all 14 ATT&CK tactic categories
-5. **Automated Defense** — auto-update firewall rules from detections
+1. **T-Pot Integration** — connect to real cloud honeypot platform with 20+ services
+2. **Global Honeypot Network** — deploy across AWS, GCP, Azure regions simultaneously
+3. **CERT-In Integration** — share threat signatures with national cybersecurity authority
+4. **Shodan Enrichment** — add exposed port and vulnerability data to attacker profiles
+5. **Automated Defense** — auto-update firewall rules from confirmed threat detections
+6. **Full MITRE Coverage** — expand from 9 to all 14 ATT&CK tactic categories
+7. **VirusTotal Rate Limiting** — per-IP cooldown to handle high-volume demos
 
 ---
 
-## 🛠️ Tech Stack
+## 📈 Project Metrics
 
-| Layer | Technology |
-|---|---|
-| Honeypots | Python sockets, T-Pot |
-| Streaming | Apache Kafka 3.0 |
-| Backend | Python 3.10, FastAPI |
-| ML | Scikit-learn, TensorFlow, XGBoost |
-| AI Pipeline | Groq API, Llama 3.3 70B (free) |
-| Frontend | Next.js 14, Tailwind, shadcn/ui |
-| Visualization | Recharts, Leaflet |
-| Reports | ReportLab, HTML/CSS |
-| DevOps | Docker, Docker Compose |
-| Threat Intel | MITRE ATT&CK, ip-api.com |
+```
+Training Data:    14,201,973 real attack records
+Datasets Used:    4 (CIC Honeynet, AWS, Dionaea, Hornet 40)
+ML Models:        4 (Isolation Forest, Random Forest, K-Means, LSTM)
+Attack Classes:   9
+API Endpoints:    19
+Deception Strategies: 4
+Attacker Profiles:    6
+Intel Sources:    3 (AbuseIPDB, VirusTotal, HoneyCloud ML)
+n8n Nodes:        7 (Webhook, Filter, AbuseIPDB, VT, Correlation, Decision, Callback)
+Dashboard Panels: 8
+```
+
+---
+
+## 🚦 System Requirements
+
+```
+OS:      Windows 10/11, Ubuntu 20.04+, macOS 12+
+RAM:     8GB minimum, 16GB recommended
+Storage: 20GB for datasets + models
+CPU:     4 cores recommended for training
+Docker:  Docker Desktop with 4GB memory allocated
+Python:  3.10 or higher
+Node.js: 18 or higher
+```
 
 ---
 
@@ -421,6 +612,8 @@ curl -X DELETE http://localhost:8000/attacks/clear
 **HoneyCloud Sentinel**
 
 *Transforming attacker behavior into actionable cyber intelligence.*
+
+Built with ❤️ for the National Level Hackathon — Blue Team Challenge
 
 ⭐ Star this repo if you found it useful
 
