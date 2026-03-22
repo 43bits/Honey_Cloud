@@ -17,8 +17,7 @@ export default function Header({ total, isLive, criticalCount }: Props) {
   const [n8nStatus, setN8nStatus] = useState<any>(null);
 
   useEffect(() => {
-    const tick = () =>
-      setTime(new Date().toUTCString().slice(17, 25) + ' UTC');
+    const tick = () => setTime(new Date().toUTCString().slice(17, 25) + ' UTC');
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
@@ -26,127 +25,133 @@ export default function Header({ total, isLive, criticalCount }: Props) {
 
   useEffect(() => {
     const load = () =>
-      fetch(`${API}/n8n/status`)
-        .then(r => r.json())
-        .then(setN8nStatus)
-        .catch(() => {});
+      fetch(`${API}/n8n/status`).then(r => r.json()).then(setN8nStatus).catch(() => {});
     load();
     const t = setInterval(load, 15000);
     return () => clearInterval(t);
   }, []);
 
   return (
-    <header className="relative z-10 flex items-center px-5 py-3
-      border-b border-cyan-500/20 bg-black/40 backdrop-blur-sm">
+    <header style={{
+      height:       '56px',
+      display:      'flex',
+      alignItems:   'center',
+      padding:      '0 24px',
+      background:   '#111111',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+      flexShrink:   0,
+      gap:          '0',
+    }}>
 
-      {/* Left — branding */}
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <div className="w-8 h-8 border border-cyan-500/60
-            rotate-45 flex items-center justify-center">
-            <div className="w-3 h-3 bg-cyan-400 rotate-[-45deg] live-pulse" />
-          </div>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '32px', flexShrink: 0 }}>
+        <div style={{
+          width: '28px', height: '28px', borderRadius: '8px',
+          background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z" fill="#111111" stroke="#111111" strokeWidth="0.5"/>
+          </svg>
         </div>
-        <div>
-          <div className="text-sm font-bold tracking-[0.3em] text-cyan-300"
-            style={{ fontFamily: "'Share Tech Mono', monospace" }}>
-            HONEYCLOUD SENTINEL
-          </div>
-          <div className="text-[9px] tracking-[0.2em] text-cyan-500/50"
-            style={{ fontFamily: "'Share Tech Mono', monospace" }}>
-            AI-DRIVEN ADAPTIVE HONEYPOT INTELLIGENCE
-          </div>
-        </div>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.02em' }}>
+          HoneyCloud<span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>.</span>
+        </span>
       </div>
 
-      {/* Center — stats */}
-      <div className="hidden md:flex items-center gap-8 ml-6">
-        <div className="text-center">
-          <div className="text-[9px] tracking-widest
-            text-cyan-500/50 font-mono">
-            TOTAL THREATS
-          </div>
-          <div className="text-xl font-bold text-cyan-300
-            font-mono tabular-nums">
-            {total.toLocaleString()}
-          </div>
+      {/* Nav links — Transcope style */}
+      <nav style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
+        {[
+          { label: 'Overview', active: true  },
+          { label: 'Attacks',  active: false },
+          { label: 'Intel',    active: false },
+          { label: 'MITRE',    active: false },
+          { label: 'Reports',  active: false },
+        ].map(({ label, active }) => (
+          <button key={label} style={{
+            padding:      '5px 14px',
+            borderRadius: '6px',
+            background:   active ? 'rgba(255,255,255,0.1)' : 'transparent',
+            border:       'none',
+            color:        active ? '#ffffff' : 'rgba(255,255,255,0.4)',
+            fontSize:     '13px',
+            fontWeight:   active ? 500 : 400,
+            cursor:       'pointer',
+            fontFamily:   'Inter, sans-serif',
+            transition:   'all 0.15s',
+          }}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+
+        {/* Stats pills */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          padding: '4px 12px',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>Total</span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{total.toLocaleString()}</span>
+          {criticalCount > 0 && (
+            <>
+              <div style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.12)' }} />
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Critical</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#ff4444' }}>{criticalCount}</span>
+            </>
+          )}
         </div>
-        {criticalCount > 0 && (
-          <div className="text-center">
-            <div className="text-[9px] tracking-widest
-              text-red-500/70 font-mono">
-              CRITICAL
-            </div>
-            <div className="text-xl font-bold text-red-400
-              font-mono tabular-nums blink">
-              {criticalCount}
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Right — all status indicators */}
-      <div className="flex items-center ml-auto gap-3">
-
-        {/* n8n status badge */}
+        {/* n8n status */}
         {n8nStatus && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded"
-            style={{
-              background: n8nStatus.n8n_running
-                ? 'rgba(0,255,136,0.06)'
-                : 'rgba(255,45,45,0.06)',
-              border: `1px solid ${n8nStatus.n8n_running
-                ? 'rgba(0,255,136,0.2)'
-                : 'rgba(255,45,45,0.2)'}`,
-            }}>
-            <div
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{
-                background: n8nStatus.n8n_running
-                  ? '#00ff88' : '#ff2d2d',
-                boxShadow: n8nStatus.n8n_running
-                  ? '0 0 6px #00ff88' : '0 0 6px #ff2d2d',
-              }}
-            />
-            <span
-              className="font-mono text-[9px] tracking-widest whitespace-nowrap"
-              style={{
-                color: n8nStatus.n8n_running
-                  ? 'rgba(0,255,136,0.7)'
-                  : 'rgba(255,45,45,0.7)',
-              }}>
-              n8n {n8nStatus.n8n_running ? 'ACTIVE' : 'OFFLINE'}
-              {n8nStatus.n8n_processed > 0
-                ? ` · ${n8nStatus.n8n_processed}` : ''}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '4px 10px',
+            background: n8nStatus.n8n_running ? 'rgba(61,214,140,0.08)' : 'rgba(255,68,68,0.08)',
+            border: `1px solid ${n8nStatus.n8n_running ? 'rgba(61,214,140,0.2)' : 'rgba(255,68,68,0.2)'}`,
+            borderRadius: '8px',
+          }}>
+            <div style={{
+              width: '5px', height: '5px', borderRadius: '50%',
+              background: n8nStatus.n8n_running ? '#3dd68c' : '#ff4444',
+            }} />
+            <span style={{ fontSize: '11px', fontWeight: 500, color: n8nStatus.n8n_running ? '#3dd68c' : '#ff4444' }}>
+              n8n {n8nStatus.n8n_running ? 'Active' : 'Offline'}
+              {n8nStatus.n8n_processed > 0 ? ` · ${n8nStatus.n8n_processed}` : ''}
             </span>
           </div>
         )}
 
-        {/* LIVE badge + time */}
-        <div className="flex items-center gap-2">
-          <div className={[
-            'flex items-center gap-2 px-3 py-1.5 border rounded',
-            'font-mono text-[10px] tracking-widest',
-            isLive
-              ? 'border-green-500/40 text-green-400 bg-green-500/5'
-              : 'border-cyan-500/20 text-cyan-500/40',
-          ].join(' ')}>
-            <span className={[
-              'w-1.5 h-1.5 rounded-full',
-              isLive ? 'bg-green-400 live-pulse' : 'bg-cyan-500/30',
-            ].join(' ')} />
-            {isLive ? 'LIVE' : 'CONNECTING'}
-          </div>
-          <div className="text-[10px] font-mono text-cyan-500/50
-            whitespace-nowrap">
-            {time}
-          </div>
+        {/* Live pill */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          padding: '4px 10px',
+          background: isLive ? 'rgba(255,255,255,0.05)' : 'transparent',
+          border: `1px solid ${isLive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.06)'}`,
+          borderRadius: '8px',
+        }}>
+          <div style={{
+            width: '6px', height: '6px', borderRadius: '50%',
+            background: isLive ? '#3dd68c' : 'rgba(255,255,255,0.2)',
+          }} />
+          <span style={{ fontSize: '11px', color: isLive ? '#f0f0f0' : 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
+            {isLive ? 'Live' : 'Connecting'}
+          </span>
         </div>
 
-        {/* Report button */}
-        <div className="flex-shrink-0">
-          <ReportButton hasData={total > 0} />
-        </div>
+        {/* Time */}
+        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
+          {time}
+        </span>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)' }} />
+
+        <ReportButton hasData={total > 0} />
       </div>
     </header>
   );

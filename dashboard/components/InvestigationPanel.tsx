@@ -20,53 +20,32 @@ interface Investigation {
   elapsed_seconds:  number;
 }
 
-const riskColor = (r: string) => {
-  if (r === 'CRITICAL') return '#ff2d2d';
-  if (r === 'HIGH')     return '#ff6b00';
-  if (r === 'MEDIUM')   return '#ffe600';
-  return '#00ffe7';
+const RISK_COLOR: Record<string, string> = {
+  CRITICAL: '#ff4444', HIGH: '#f5a623', MEDIUM: '#f0c040', LOW: '#3dd68c',
 };
 
-const riskBg = (r: string) => {
-  if (r === 'CRITICAL') return 'rgba(255,45,45,0.08)';
-  if (r === 'HIGH')     return 'rgba(255,107,0,0.08)';
-  if (r === 'MEDIUM')   return 'rgba(255,230,0,0.05)';
-  return 'rgba(0,255,231,0.03)';
-};
-
-const AGENTS = [
-  { key: 'log_analysis',     label: 'LOG ANALYSIS',    icon: '🔬', color: '#00ffe7' },
-  { key: 'investigation',    label: 'THREAT CONTEXT',  icon: '🕵️', color: '#ff6b00' },
-  { key: 'risk_assessment',  label: 'RISK ASSESSMENT', icon: '🎯', color: '#ff2d2d' },
-  { key: 'response_actions', label: 'RESPONSE ACTIONS',icon: '🛡️', color: '#00ff88' },
+const TABS = [
+  { key: 'log_analysis',     label: 'Log Analysis'   },
+  { key: 'investigation',    label: 'Threat Context' },
+  { key: 'risk_assessment',  label: 'Risk'           },
+  { key: 'response_actions', label: 'Response'       },
 ] as const;
 
-export default function InvestigationPanel({
-  selectedAttack,
-}: {
-  selectedAttack: Attack | null;
-}) {
+export default function InvestigationPanel({ selectedAttack }: { selectedAttack: Attack | null }) {
   const [report,  setReport]  = useState<Investigation | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tab,     setTab]     = useState<typeof AGENTS[number]['key']>('log_analysis');
+  const [tab,     setTab]     = useState<typeof TABS[number]['key']>('log_analysis');
 
-  useEffect(() => {
-    setReport(null);
-    setTab('log_analysis');
-  }, [selectedAttack?.source_ip, selectedAttack?.timestamp]);
+  useEffect(() => { setReport(null); setTab('log_analysis'); }, [selectedAttack?.source_ip, selectedAttack?.timestamp]);
 
-  const color = selectedAttack
-    ? riskColor(selectedAttack.risk_level)
-    : 'rgba(0,255,231,0.3)';
+  const color = selectedAttack ? (RISK_COLOR[selectedAttack.risk_level] || '#3dd68c') : '#3dd68c';
 
-  const handleViewInsights = async () => {
+  const handleInvestigate = async () => {
     if (!selectedAttack || loading || report) return;
     setLoading(true);
-
     try {
       const res  = await fetch(`${API}/investigate`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source_ip:       selectedAttack.source_ip,
           source_port:     (selectedAttack as any).source_port || 0,
@@ -77,152 +56,102 @@ export default function InvestigationPanel({
           connection_rate: (selectedAttack as any).connection_rate || 20.0,
         }),
       });
-
       const data = await res.json();
-
-      if (data.investigation && !data.investigation.skipped) {
-        setReport(data.investigation);
-      } else {
-        setReport({
-          ...data.investigation,
-          skipped: false,
-          log_analysis:     data.investigation?.reason || 'Investigation complete',
-          investigation:    data.investigation?.reason || '',
-          risk_assessment:  data.investigation?.reason || '',
-          response_actions: data.investigation?.reason || '',
-          attack_ip:        selectedAttack.source_ip,
-          attack_type:      selectedAttack.attack_type,
-          risk_level:       selectedAttack.risk_level,
-          mitre_id:         (selectedAttack as any).mitre_technique_id || '',
-          generated_at:     new Date().toISOString(),
-          elapsed_seconds:  0,
-        });
-      }
-    } catch (err) {
-      console.error('[Investigation] Failed:', err);
-    } finally {
-      setLoading(false);
-    }
+      if (data.investigation && !data.investigation.skipped) setReport(data.investigation);
+    } catch {}
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="rounded overflow-hidden flex flex-col"
-      style={{
-        border:     '1px solid rgba(0,255,231,0.12)',
-        background: 'rgba(0,0,0,0.4)',
-        minHeight:  '420px',
-      }}>
+    <div style={{ background: '#1a1a1a', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '320px' }}>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-        style={{
-          background:   'rgba(0,255,231,0.04)',
-          borderBottom: '1px solid rgba(0,255,231,0.08)',
-        }}>
-        <span className="font-mono text-[9px] tracking-widest"
-          style={{ color: 'rgba(0,255,231,0.5)' }}>
-          AI THREAT INVESTIGATION
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', flexShrink: 0 }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>AI Investigation</span>
         {selectedAttack && (
-          <span className="font-mono text-[9px] px-2 py-0.5 rounded"
-            style={{
-              color,
-              background: `${color}15`,
-              border:     `1px solid ${color}30`,
-            }}>
+          <span style={{ fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '6px', background: `${color}14`, border: `1px solid ${color}30`, color }}>
             {selectedAttack.risk_level}
           </span>
         )}
       </div>
 
-      {!selectedAttack && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
-          <div className="font-mono text-[10px] tracking-widest text-center"
-            style={{ color: 'rgba(0,255,231,0.2)' }}>
-            ← SELECT AN ATTACK FROM THE FEED
+      {!selectedAttack ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', gap: '12px' }}>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)', textAlign: 'center' }}>
+            Select an attack to investigate
           </div>
-        </div>
-      )}
-
-      {selectedAttack && (
-        <div className="flex flex-col flex-1">
-
-          <div className="flex flex-shrink-0"
-            style={{ borderBottom: '1px solid rgba(0,255,231,0.08)' }}>
-            {AGENTS.map((agent) => (
-              <button key={agent.key}
-                onClick={() => setTab(agent.key)}
-                className="flex items-center gap-1.5 px-3 py-2.5
-                  font-mono text-[9px] tracking-widest
-                  transition-all hover:bg-white/5 flex-1 justify-center"
-                style={{
-                  color: tab === agent.key
-                    ? agent.color
-                    : 'rgba(0,255,231,0.3)',
-                  borderBottom: tab === agent.key
-                    ? `2px solid ${agent.color}`
-                    : '2px solid transparent',
-                  background: tab === agent.key
-                    ? `${agent.color}08`
-                    : 'transparent',
-                }}>
-                <span style={{ fontSize: '16px' }}>{agent.icon}</span>
-                <span className="hidden xl:inline">{agent.label}</span>
-              </button>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['Log Analyzer', 'Threat Intel', 'Risk Analyst', 'Responder'].map(a => (
+              <span key={a} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)' }}>{a}</span>
             ))}
           </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-          <div className="flex-1 relative" style={{ minHeight: '200px' }}>
+          {/* Attack strip */}
+          <div style={{ padding: '10px 20px', background: `${color}0a`, borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, flexShrink: 0 }} />
+            <span style={{ fontSize: '12px', fontWeight: 600, color, fontFamily: 'var(--mono)' }}>{selectedAttack.source_ip}</span>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedAttack.attack_type}</span>
+            {selectedAttack.country && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>{selectedAttack.country}</span>}
+          </div>
 
+          {/* Tabs */}
+          {report && (
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+              {TABS.map(t => (
+                <button key={t.key} onClick={() => setTab(t.key)} style={{
+                  flex: 1, padding: '9px 8px',
+                  fontSize: '11px', fontWeight: tab === t.key ? 500 : 400,
+                  color: tab === t.key ? '#ffffff' : 'rgba(255,255,255,0.35)',
+                  background: tab === t.key ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  border: 'none', borderBottom: `2px solid ${tab === t.key ? 'rgba(255,255,255,0.5)' : 'transparent'}`,
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+                }}>{t.label}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Body */}
+          <div style={{ flex: 1, position: 'relative', minHeight: '200px' }}>
             {!report && (
-              <div className="absolute inset-0 flex flex-col
-                items-center justify-center gap-3">
-                <button
-                  onClick={handleViewInsights}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-6 py-3
-                    rounded font-mono text-[11px] tracking-widest
-                    transition-all hover:scale-105 active:scale-95
-                    disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: `${color}15`,
-                    border:     `1px solid ${color}`,
-                    color:      color,
-                    boxShadow:  `0 0 20px ${color}33`,
-                  }}
-                >
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '24px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>4-Agent AI Pipeline · Groq Llama 3.3 70B</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.15)' }}>Analyzes logs, threat context, risk, and response</div>
+                </div>
+                <button onClick={handleInvestigate} disabled={loading} style={{
+                  padding: '10px 28px', borderRadius: '8px',
+                  background: loading ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: loading ? 'rgba(255,255,255,0.4)' : '#ffffff',
+                  fontSize: '12px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
                   {loading ? (
-                    <>
-                      <span style={{
-                        display:   'inline-block',
-                        animation: 'spin 1s linear infinite',
-                      }}>
-                        ⟳
-                      </span>
-                      <span>ANALYZING...</span>
-                    </>
+                    <><span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span> Analyzing...</>
                   ) : (
-                    <>
-                      <span>🔍</span>
-                      <span>VIEW INSIGHTS</span>
-                    </>
+                    <><span>🔍</span> View Insights</>
                   )}
                 </button>
               </div>
             )}
-
             {report && (
-              <div className="p-4 overflow-y-auto h-full">
-                <div className="font-mono text-xs leading-relaxed whitespace-pre-wrap"
-                  style={{ color: 'rgba(180,210,240,0.8)' }}>
-                  {report[tab as keyof Pick<
-  Investigation,
-  'log_analysis' | 'investigation' | 'risk_assessment' | 'response_actions'
->]}
-                </div>
+              <div style={{ padding: '16px 20px', overflowY: 'auto', height: '100%', fontSize: '12px', lineHeight: '1.7', color: 'rgba(255,255,255,0.55)', whiteSpace: 'pre-wrap', fontFamily: 'Inter, sans-serif' }}>
+                {report[tab as keyof Pick<Investigation,'log_analysis'|'investigation'|'risk_assessment'|'response_actions'>]}
               </div>
             )}
           </div>
+
+          {report && (
+            <div style={{ padding: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+              <button onClick={() => setReport(null)} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                Re-run ↺
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

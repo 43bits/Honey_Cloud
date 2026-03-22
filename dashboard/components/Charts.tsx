@@ -1,10 +1,6 @@
-// components/Charts.tsx
 'use client';
 
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell
-} from 'recharts';
+import { useState, useRef } from 'react';
 
 interface Props {
   topAttackTypes: { type: string; count: number }[];
@@ -12,92 +8,185 @@ interface Props {
   topCountries:   { country: string; count: number }[];
 }
 
-const CYAN   = '#00ffe7';
-const colors = ['#00ffe7', '#ff6b00', '#ff2d2d', '#ffe600', '#00ff88'];
+const RISK_COLORS = ['#ff4444', '#f5a623', '#f0c040', '#3dd68c', '#60a5fa'];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const TT = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
+function InfoPopover({
+  title,
+  items,
+  keyLabel,
+  valueLabel,
+}: {
+  title:      string;
+  items:      { label: string; count: number }[];
+  keyLabel:   string;
+  valueLabel: string;
+}) {
+  const max = Math.max(...items.map(i => i.count), 1);
+
   return (
-    <div className="font-mono text-[10px] px-3 py-2 rounded"
-      style={{ background: '#020810', border: '1px solid rgba(0,255,231,0.2)', color: CYAN }}>
-      <div className="opacity-60">{label}</div>
-      <div className="font-bold">{payload[0].value}</div>
+    <div style={{
+      position:     'absolute',
+      bottom:       'calc(100% + 10px)',
+      left:         '50%',
+      transform:    'translateX(-50%)',
+      zIndex:       200,
+      width:        '220px',
+      background:   '#1a1a1a',
+      border:       '1px solid rgba(255,255,255,0.12)',
+      borderRadius: '10px',
+      boxShadow:    '0 16px 40px rgba(0,0,0,0.6)',
+      overflow:     'hidden',
+      pointerEvents:'none',
+      animation:    'fadeSlideIn 0.15s ease-out',
+    }}>
+      {/* Arrow */}
+      <div style={{
+        position:    'absolute',
+        bottom:      '-5px',
+        left:        '50%',
+        transform:   'translateX(-50%) rotate(45deg)',
+        width:       '9px',
+        height:      '9px',
+        background:  '#1a1a1a',
+        border:      '1px solid rgba(255,255,255,0.12)',
+        borderTop:   'none',
+        borderLeft:  'none',
+      }} />
+
+      <div style={{ padding: '12px 14px 4px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: '#ffffff', marginBottom: '10px' }}>{title}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0 8px', marginBottom: '4px' }}>
+          <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>{keyLabel.toUpperCase()}</span>
+          <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', textAlign: 'right' }}>{valueLabel.toUpperCase()}</span>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 14px 12px' }}>
+        {items.slice(0, 6).map((item, i) => {
+          const pct = Math.round((item.count / max) * 100);
+          return (
+            <div key={item.label} style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                <span style={{
+                  fontSize:     '11px',
+                  color:        'rgba(255,255,255,0.65)',
+                  overflow:     'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace:   'nowrap',
+                  maxWidth:     '140px',
+                }}>
+                  {item.label}
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: RISK_COLORS[i % RISK_COLORS.length], flexShrink: 0 }}>
+                  {item.count}
+                </span>
+              </div>
+              <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{
+                  height:       '100%',
+                  width:        `${pct}%`,
+                  background:   RISK_COLORS[i % RISK_COLORS.length],
+                  borderRadius: '2px',
+                  opacity:      0.75,
+                }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-};
+}
 
-export default function Charts({ topAttackTypes, topPorts, topCountries }: Props) {
-  const barData = topAttackTypes.map(({ type, count }) => ({
-    name: type.replace(' Attack','').replace(' Brute Force',' BF').replace(' Exploit',''),
-    count,
+function InfoButton({
+  icon,
+  label,
+  title,
+  items,
+  keyLabel,
+  valueLabel,
+  disabled,
+}: {
+  icon:       string;
+  label:      string;
+  title:      string;
+  items:      { label: string; count: number }[];
+  keyLabel:   string;
+  valueLabel: string;
+  disabled:   boolean;
+}) {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <button style={{
+        display:      'flex',
+        alignItems:   'center',
+        gap:          '5px',
+        padding:      '5px 10px',
+        borderRadius: '7px',
+        background:   hover && !disabled ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+        border:       '1px solid rgba(255,255,255,0.1)',
+        color:        disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.55)',
+        fontSize:     '11px',
+        fontWeight:   500,
+        cursor:       disabled ? 'default' : 'pointer',
+        fontFamily:   'Inter, sans-serif',
+        transition:   'all 0.15s',
+        whiteSpace:   'nowrap',
+      }}>
+        <span style={{ fontSize: '13px' }}>{icon}</span>
+        {label}
+        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginLeft: '1px' }}>ℹ</span>
+      </button>
+
+      {hover && !disabled && items.length > 0 && (
+        <InfoPopover
+          title={title}
+          items={items}
+          keyLabel={keyLabel}
+          valueLabel={valueLabel}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function Charts({ topAttackTypes, topCountries }: Props) {
+  const attackItems  = topAttackTypes.map(t => ({
+    label: t.type.replace(' Attack','').replace(' Brute Force',' BF').replace(' Exploit',''),
+    count: t.count,
+  }));
+
+  const countryItems = topCountries.map(c => ({
+    label: c.country,
+    count: c.count,
   }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-
-      {/* Attack types */}
-      <div className="lg:col-span-2 p-4 rounded"
-        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0,255,231,0.12)' }}>
-        <div className="text-[9px] font-mono tracking-widest mb-4"
-          style={{ color: 'rgba(0,255,231,0.4)' }}>ATTACK TYPE FREQUENCY</div>
-        {barData.length === 0 ? (
-          <div className="h-36 flex items-center justify-center font-mono text-xs"
-            style={{ color: 'rgba(0,255,231,0.2)' }}>
-            <span className="blink">no data yet_</span>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={140}>
-            <BarChart data={barData} margin={{ top: 0, right: 0, bottom: 0, left: -25 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'rgba(0,255,231,0.4)', fontFamily: 'Share Tech Mono' }} />
-              <YAxis tick={{ fontSize: 9, fill: 'rgba(0,255,231,0.3)', fontFamily: 'Share Tech Mono' }} />
-              <Tooltip content={<TT />} />
-              <Bar dataKey="count" radius={[2,2,0,0]}>
-                {barData.map((_, i) => (
-                  <Cell key={i} fill={colors[i % colors.length]}
-                    style={{ filter: `drop-shadow(0 0 4px ${colors[i % colors.length]})` }} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Top countries */}
-      <div className="p-4 rounded"
-        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0,255,231,0.12)' }}>
-        <div className="text-[9px] font-mono tracking-widest mb-4"
-          style={{ color: 'rgba(0,255,231,0.4)' }}>TOP SOURCE NATIONS</div>
-        {topCountries.length === 0 ? (
-          <div className="h-36 flex items-center justify-center font-mono text-xs"
-            style={{ color: 'rgba(0,255,231,0.2)' }}>
-            <span className="blink">no data yet_</span>
-          </div>
-        ) : (
-          <div className="space-y-2.5 mt-2">
-            {topCountries.map(({ country, count }, i) => {
-              const max = topCountries[0].count;
-              const pct = Math.round((count / max) * 100);
-              return (
-                <div key={country}>
-                  <div className="flex justify-between text-[10px] font-mono mb-1">
-                    <span style={{ color: 'rgba(0,255,231,0.7)' }}>{country}</span>
-                    <span style={{ color: colors[i % colors.length] }}>{count}</span>
-                  </div>
-                  <div className="h-px w-full" style={{ background: 'rgba(0,255,231,0.08)' }}>
-                    <div className="h-full transition-all duration-700"
-                      style={{
-                        width: `${pct}%`,
-                        background: colors[i % colors.length],
-                        boxShadow: `0 0 6px ${colors[i % colors.length]}`,
-                      }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <InfoButton
+        icon="⚔️"
+        label="Attack Types"
+        title="Attack Distribution"
+        items={attackItems}
+        keyLabel="Type"
+        valueLabel="Count"
+        disabled={attackItems.length === 0}
+      />
+      <InfoButton
+        icon="🌍"
+        label="Source Nations"
+        title="Top Source Nations"
+        items={countryItems}
+        keyLabel="Country"
+        valueLabel="Count"
+        disabled={countryItems.length === 0}
+      />
     </div>
   );
 }

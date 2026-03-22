@@ -1,49 +1,55 @@
-// components/StatCards.tsx
 'use client';
 
 interface Props {
   byRisk: { LOW: number; MEDIUM: number; HIGH: number; CRITICAL: number };
-  total: number;
+  total:  number;
 }
 
-const levels = [
-  { key: 'CRITICAL' as const, color: '#ff2d2d', bg: 'rgba(255,45,45,0.05)',   border: 'rgba(255,45,45,0.25)'  },
-  { key: 'HIGH'     as const, color: '#ff6b00', bg: 'rgba(255,107,0,0.05)',   border: 'rgba(255,107,0,0.25)'  },
-  { key: 'MEDIUM'   as const, color: '#ffe600', bg: 'rgba(255,230,0,0.05)',   border: 'rgba(255,230,0,0.25)'  },
-  { key: 'LOW'      as const, color: '#00ffe7', bg: 'rgba(0,255,231,0.05)',   border: 'rgba(0,255,231,0.25)'  },
+const LEVELS = [
+  { key: 'CRITICAL' as const, color: '#ff4444', label: 'Critical' },
+  { key: 'HIGH'     as const, color: '#f5a623', label: 'High'     },
+  { key: 'MEDIUM'   as const, color: '#f0c040', label: 'Medium'   },
+  { key: 'LOW'      as const, color: '#3dd68c', label: 'Low'      },
 ];
 
 export default function StatCards({ byRisk, total }: Props) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-      {levels.map(({ key, color, bg, border }) => {
+    <div style={{
+      display:             'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap:                 '8px',
+      padding:             '12px 16px',
+      background:          '#111111',
+      borderBottom:        '1px solid rgba(255,255,255,0.07)',
+      flexShrink:          0,
+    }}>
+      {LEVELS.map(({ key, color, label }) => {
         const count = byRisk[key] || 0;
         const pct   = total > 0 ? Math.round((count / total) * 100) : 0;
+
         return (
-          <div key={key} className="relative p-4 rounded overflow-hidden"
-            style={{ background: bg, border: `1px solid ${border}` }}>
+          <div key={key} style={{
+            background:   '#1a1a1a',
+            borderRadius: '10px',
+            padding:      '14px 16px',
+            border:       '1px solid rgba(255,255,255,0.06)',
+            display:      'flex',
+            alignItems:   'center',
+            gap:          '14px',
+          }}>
+            {/* Color dot */}
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color, flexShrink: 0 }} />
 
-            {/* Corner decoration */}
-            <div className="absolute top-0 right-0 w-6 h-6 border-t border-r"
-              style={{ borderColor: color, opacity: 0.4 }} />
-            <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l"
-              style={{ borderColor: color, opacity: 0.4 }} />
-
-            <div className="text-[9px] tracking-[0.25em] mb-2 font-mono"
-              style={{ color, opacity: 0.7 }}>{key}</div>
-
-            <div className="text-3xl font-bold tabular-nums font-mono"
-              style={{ color, textShadow: `0 0 20px ${color}` }}>
-              {count}
-            </div>
-
-            <div className="mt-3 h-px w-full" style={{ background: `rgba(${color === '#ff2d2d' ? '255,45,45' : color === '#ff6b00' ? '255,107,0' : color === '#ffe600' ? '255,230,0' : '0,255,231'},0.15)` }}>
-              <div className="h-full transition-all duration-700"
-                style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }} />
-            </div>
-
-            <div className="text-[9px] font-mono mt-1" style={{ color, opacity: 0.4 }}>
-              {pct}% OF TOTAL
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>{label}</span>
+                <span style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>{count}</span>
+              </div>
+              {/* Bar — white filled like Transcope */}
+              <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px', transition: 'width 0.6s ease', opacity: 0.8 }} />
+              </div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', marginTop: '4px' }}>{pct}% of {total}</div>
             </div>
           </div>
         );

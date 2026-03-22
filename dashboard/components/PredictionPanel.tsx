@@ -1,4 +1,3 @@
-// components/PredictionPanel.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,330 +5,134 @@ import { useState, useEffect } from 'react';
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface Prediction {
-  ready:          boolean;
-  reason?:        string;
-  predicted?:     string;
-  confidence?:    number;
-  probabilities?: Record<string, number>;
-  recommendation?: string;
-  sequence_used?: string[];
+  ready: boolean; reason?: string; predicted?: string; confidence?: number;
+  probabilities?: Record<string,number>; recommendation?: string; sequence_used?: string[];
 }
 
-const riskColor = (attack: string) => {
-  if (attack === 'Database Attack')   return '#ff2d2d';
-  if (attack === 'SSH Brute Force')   return '#ff6b00';
-  if (attack === 'Telnet Attack')     return '#ff2d2d';
-  if (attack === 'Web Exploit')       return '#ff6b00';
-  if (attack === 'FTP Attack')        return '#ffe600';
-  return '#00ffe7';
-};
-
-const confidenceLabel = (c: number) => {
-  if (c >= 80) return { label: 'HIGH CONFIDENCE',   color: '#ff2d2d' };
-  if (c >= 60) return { label: 'MEDIUM CONFIDENCE', color: '#ff6b00' };
-  return         { label: 'LOW CONFIDENCE',          color: '#ffe600' };
+const RISK_COLOR = (a: string) => {
+  if (['Database Attack','Telnet Attack','SSH Brute Force'].includes(a)) return '#ff4444';
+  if (['Web Exploit','FTP Attack'].includes(a)) return '#f5a623';
+  return '#3dd68c';
 };
 
 export default function PredictionPanel() {
-  const [data,        setData]        = useState<Prediction | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [retraining,  setRetraining]  = useState(false);
-  const [lastUpdated, setLastUpdated] = useState('');
+  const [data,       setData]       = useState<Prediction | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [retraining, setRetraining] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState('');
 
   const fetchPrediction = async () => {
     try {
       const res = await fetch(`${API}/predict/next`);
       setData(await res.json());
-      setLastUpdated(new Date().toLocaleTimeString('en-GB'));
+      setLastUpdate(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
     } catch {}
     finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchPrediction();
-    const t = setInterval(fetchPrediction, 10000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { fetchPrediction(); const t = setInterval(fetchPrediction, 10000); return () => clearInterval(t); }, []);
 
   const handleRetrain = async () => {
     setRetraining(true);
-    try {
-      await fetch(`${API}/predict/train`, { method: 'POST' });
-      setTimeout(() => {
-        fetchPrediction();
-        setRetraining(false);
-      }, 5000);
-    } catch {
-      setRetraining(false);
-    }
+    try { await fetch(`${API}/predict/train`, { method:'POST' }); setTimeout(() => { fetchPrediction(); setRetraining(false); }, 5000); }
+    catch { setRetraining(false); }
   };
 
   return (
-    <div
-      className="rounded overflow-hidden"
-      style={{
-        border:     '1px solid rgba(0,255,231,0.12)',
-        background: 'rgba(0,0,0,0.4)',
-      }}
-    >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{
-          background:   'rgba(0,255,231,0.04)',
-          borderBottom: '1px solid rgba(0,255,231,0.08)',
-        }}
-      >
+    <div style={{ background:'#1a1a1a', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', overflow:'hidden', minHeight:'200px' }}>
+
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 12px' }}>
         <div>
-          <span
-            className="font-mono text-[9px] tracking-widest"
-            style={{ color: 'rgba(0,255,231,0.5)' }}
-          >
-            LSTM ATTACK PREDICTION ENGINE
-          </span>
-          <span
-            className="font-mono text-[9px] ml-4"
-            style={{ color: 'rgba(0,255,231,0.25)' }}
-          >
-            NEXT LIKELY ATTACK
-          </span>
+          <span style={{ fontSize:'13px', fontWeight:600, color:'#ffffff' }}>LSTM Prediction</span>
+          {lastUpdate && <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.25)', marginLeft:'10px' }}>{lastUpdate}</span>}
         </div>
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span
-              className="font-mono text-[9px]"
-              style={{ color: 'rgba(0,255,231,0.2)' }}
-            >
-              {lastUpdated}
-            </span>
-          )}
-          <button
-            onClick={handleRetrain}
-            disabled={retraining}
-            className="font-mono text-[9px] px-3 py-1 rounded
-              tracking-widest transition-all hover:scale-105
-              disabled:opacity-40"
-            style={{
-              border:     '1px solid rgba(0,255,231,0.2)',
-              color:      'rgba(0,255,231,0.4)',
-              background: 'rgba(0,255,231,0.04)',
-            }}
-          >
-            {retraining ? '⟳ TRAINING...' : '↺ RETRAIN'}
-          </button>
-        </div>
+        <button onClick={handleRetrain} disabled={retraining} style={{
+          padding:'4px 12px', borderRadius:'6px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)',
+          color: retraining ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight:500,
+          cursor: retraining ? 'not-allowed':'pointer', fontFamily:'Inter,sans-serif',
+        }}>
+          {retraining ? '⟳ Training...' : '↺ Retrain'}
+        </button>
       </div>
 
-      <div className="p-4">
-        {loading ? (
-          <div
-            className="py-8 text-center font-mono text-sm"
-            style={{ color: 'rgba(0,255,231,0.2)' }}
-          >
-            <span className="blink">loading prediction_</span>
+      <div style={{ padding:'0 20px 20px' }}>
+        {loading && <div style={{ textAlign:'center', padding:'20px 0', fontSize:'12px', color:'rgba(255,255,255,0.2)' }}>Loading prediction...</div>}
+
+        {!loading && !data?.ready && (
+          <div style={{ textAlign:'center', padding:'20px 0' }}>
+            <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.25)', marginBottom:'6px' }}>Model warming up</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.15)' }}>{data?.reason || 'Need at least 3 attacks'}</div>
           </div>
+        )}
 
-        ) : !data?.ready ? (
-          <div
-            className="py-8 text-center font-mono"
-            style={{ color: 'rgba(0,255,231,0.2)' }}
-          >
-            <div className="text-sm blink mb-2">
-              model warming up_
-            </div>
-            <div className="text-[10px]">
-              {data?.reason || 'Need more attack data'}
-            </div>
-            <div className="text-[10px] mt-1">
-              Run demo script to generate attacks,
-              then click RETRAIN
-            </div>
-          </div>
+        {!loading && data?.ready && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
 
-        ) : (
-          <div className="space-y-4">
-
-            {/* Main prediction */}
-            <div className="flex items-center gap-6">
+            {/* Main */}
+            <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
               <div>
-                <div
-                  className="font-mono text-[9px] tracking-widest mb-1"
-                  style={{ color: 'rgba(0,255,231,0.35)' }}
-                >
-                  PREDICTED NEXT ATTACK
-                </div>
-                <div
-                  className="font-mono text-2xl font-bold"
-                  style={{
-                    color:      riskColor(data.predicted || ''),
-                    textShadow: `0 0 20px ${riskColor(data.predicted || '')}55`,
-                  }}
-                >
-                  {data.predicted}
-                </div>
+                <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.3)', marginBottom:'4px', fontWeight:500 }}>Next Predicted</div>
+                <div style={{ fontSize:'20px', fontWeight:700, color:RISK_COLOR(data.predicted||''), lineHeight:1, fontFamily:'Inter,sans-serif' }}>{data.predicted}</div>
               </div>
-
-              {/* Confidence gauge */}
-              <div className="flex-1">
-                <div className="flex justify-between mb-1">
-                  <span
-                    className="font-mono text-[9px] tracking-widest"
-                    style={{
-                      color: confidenceLabel(data.confidence || 0).color,
-                    }}
-                  >
-                    {confidenceLabel(data.confidence || 0).label}
-                  </span>
-                  <span
-                    className="font-mono text-[9px] font-bold"
-                    style={{
-                      color: confidenceLabel(data.confidence || 0).color,
-                    }}
-                  >
-                    {data.confidence}%
-                  </span>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
+                  <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.3)' }}>Confidence</span>
+                  <span style={{ fontSize:'12px', fontWeight:600, color:RISK_COLOR(data.predicted||'') }}>{data.confidence}%</span>
                 </div>
-                <div
-                  className="h-2 rounded-full"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width:     `${data.confidence}%`,
-                      background: confidenceLabel(data.confidence || 0).color,
-                      boxShadow:  `0 0 8px ${
-                        confidenceLabel(data.confidence || 0).color
-                      }`,
-                    }}
-                  />
+                <div style={{ height:'4px', background:'rgba(255,255,255,0.07)', borderRadius:'2px' }}>
+                  <div style={{ height:'100%', width:`${data.confidence}%`, background:RISK_COLOR(data.predicted||''), borderRadius:'2px', transition:'width 0.7s ease' }} />
                 </div>
               </div>
             </div>
 
             {/* Recommendation */}
             {data.recommendation && (
-              <div
-                className="px-4 py-3 rounded font-mono text-xs"
-                style={{
-                  background: 'rgba(0,255,136,0.05)',
-                  border:     '1px solid rgba(0,255,136,0.15)',
-                  color:      'rgba(0,255,136,0.8)',
-                  lineHeight: '1.6',
-                }}
-              >
-                <span
-                  className="text-[9px] tracking-widest block mb-1"
-                  style={{ color: 'rgba(0,255,136,0.4)' }}
-                >
-                  🛡 PREEMPTIVE ACTION
-                </span>
-                {data.recommendation}
+              <div style={{ background:'rgba(61,214,140,0.05)', border:'1px solid rgba(61,214,140,0.12)', borderRadius:'8px', padding:'10px 14px' }}>
+                <div style={{ fontSize:'10px', color:'rgba(61,214,140,0.4)', marginBottom:'4px', fontWeight:500 }}>PREEMPTIVE ACTION</div>
+                <div style={{ fontSize:'11px', color:'rgba(61,214,140,0.7)', lineHeight:'1.6' }}>{data.recommendation}</div>
               </div>
             )}
 
-            {/* Probability bars */}
+            {/* Probabilities */}
             {data.probabilities && (
               <div>
-                <div
-                  className="font-mono text-[9px] tracking-widest mb-2"
-                  style={{ color: 'rgba(0,255,231,0.35)' }}
-                >
-                  ALL CLASS PROBABILITIES
-                </div>
-                <div className="space-y-1.5">
-                  {Object.entries(data.probabilities)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([type, prob]) => (
-                      <div
-                        key={type}
-                        className="grid gap-2 items-center"
-                        style={{
-                          gridTemplateColumns: '160px 1fr 40px',
-                        }}
-                      >
-                        <span
-                          className="font-mono text-[10px] truncate"
-                          style={{
-                            color: type === data.predicted
-                              ? riskColor(type)
-                              : 'rgba(0,255,231,0.4)',
-                          }}
-                        >
-                          {type === data.predicted ? '▸ ' : '  '}
-                          {type}
+                <div style={{ fontSize:'11px', fontWeight:500, color:'rgba(255,255,255,0.35)', marginBottom:'10px' }}>Class Probabilities</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'7px' }}>
+                  {Object.entries(data.probabilities).sort((a,b)=>b[1]-a[1]).map(([type, prob]) => {
+                    const isPred = type === data.predicted;
+                    const c      = isPred ? RISK_COLOR(type) : 'rgba(255,255,255,0.2)';
+                    return (
+                      <div key={type} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 36px', gap:'10px', alignItems:'center' }}>
+                        <span style={{ fontSize:'11px', color: isPred ? RISK_COLOR(type) : 'rgba(255,255,255,0.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontWeight: isPred ? 500 : 400 }}>
+                          {isPred ? '▸ ' : ''}{type}
                         </span>
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ background: 'rgba(255,255,255,0.04)' }}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width:     `${prob}%`,
-                              background: type === data.predicted
-                                ? riskColor(type)
-                                : 'rgba(0,255,231,0.3)',
-                              boxShadow: type === data.predicted
-                                ? `0 0 6px ${riskColor(type)}`
-                                : 'none',
-                            }}
-                          />
+                        <div style={{ height:'3px', background:'rgba(255,255,255,0.06)', borderRadius:'2px' }}>
+                          <div style={{ height:'100%', width:`${prob}%`, background:c, borderRadius:'2px', transition:'width 0.7s' }} />
                         </div>
-                        <span
-                          className="font-mono text-[10px] text-right"
-                          style={{
-                            color: type === data.predicted
-                              ? riskColor(type)
-                              : 'rgba(0,255,231,0.3)',
-                          }}
-                        >
-                          {prob}%
-                        </span>
+                        <span style={{ fontSize:'11px', color:c, textAlign:'right', fontWeight: isPred?500:400 }}>{prob}%</span>
                       </div>
-                    ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Sequence used */}
+            {/* Sequence */}
             {data.sequence_used && (
               <div>
-                <div
-                  className="font-mono text-[9px] tracking-widest mb-2"
-                  style={{ color: 'rgba(0,255,231,0.25)' }}
-                >
-                  SEQUENCE USED FOR PREDICTION
-                </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div style={{ fontSize:'11px', fontWeight:500, color:'rgba(255,255,255,0.25)', marginBottom:'7px' }}>Sequence Used</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'4px' }}>
                   {data.sequence_used.map((s, i) => (
-                    <span
-                      key={i}
-                      className="font-mono text-[9px] px-2 py-0.5 rounded"
-                      style={{
-                        background: 'rgba(0,255,231,0.05)',
-                        border:     '1px solid rgba(0,255,231,0.12)',
-                        color:      'rgba(0,255,231,0.4)',
-                      }}
-                    >
-                      {i + 1}. {s}
+                    <span key={i} style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'5px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.4)' }}>
+                      {i+1}. {s}
                     </span>
                   ))}
-                  <span
-                    className="font-mono text-[9px] px-2 py-0.5 rounded
-                      blink"
-                    style={{
-                      background: `${riskColor(data.predicted || '')}15`,
-                      border:     `1px solid ${riskColor(data.predicted || '')}40`,
-                      color:      riskColor(data.predicted || ''),
-                    }}
-                  >
+                  <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'5px', background:`${RISK_COLOR(data.predicted||'')}0f`, border:`1px solid ${RISK_COLOR(data.predicted||'')}25`, color:RISK_COLOR(data.predicted||'') }}>
                     → {data.predicted}?
                   </span>
                 </div>
               </div>
             )}
-
           </div>
         )}
       </div>
