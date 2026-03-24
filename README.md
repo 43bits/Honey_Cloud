@@ -3,7 +3,7 @@
 # 🛡️ HoneyCloud Sentinel
 
 ### AI-Driven Adaptive Honeypot Intelligence Platform
-### for Real-Time Cyber Threat Detection
+### for Real-Time Cyber Threat Detection ...
 
 *Turning attacker behavior into actionable cyber intelligence.*
 
