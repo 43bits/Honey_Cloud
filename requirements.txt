@@ -1,28 +1,49 @@
-# ── Build essentials ──
+# Build fix
 setuptools>=68
 wheel
 
-# ── Core API ──
+# Core API
 fastapi==0.110.0
 uvicorn==0.29.0
 pydantic==2.10.4
 starlette==0.41.0
+
+# Utils
 python-multipart==0.0.12
+python-dateutil==2.9.0
+pytz==2024.2
 python-dotenv
 
-# ── ML (stable + lightweight) ──
+# ML
 numpy==1.24.4
 pandas==2.0.3
 scikit-learn==1.3.2
 xgboost==2.1.3
 joblib==1.4.2
 
-# ── Kafka ──
+# Kafka
 kafka-python==2.0.2
 
-# ── HTTP ──
-requests
-httpx==0.28.1
+# AI APIs
+groq==0.13.0
+anthropic==0.40.0
 
-# ── Optional utilities ──
+# HTTP
+httpx==0.28.1
+requests
+certifi==2024.12.14
+urllib3==2.3.0
+idna==3.10
+
+# Reports
+reportlab==4.2.5
+pillow==11.1.0
+
+# Misc
 rich==13.9.4
+six==1.17.0
+packaging==24.2
+typing_extensions==4.12.2
+
+# Deep Learning (SAFE)
+keras==3.7.0
