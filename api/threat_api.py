@@ -41,10 +41,22 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://honeycloud-iota.vercel.app",  # your frontend
+        "https://honeycloud-kv34zuhij-chandrakant-gawas-projects.vercel.app/",                    # preview deployments
+        "http://localhost:3000",                   # local dev
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 class N8nEnrichment(BaseModel):
     source_ip:           str
@@ -1017,3 +1029,5 @@ def n8n_status():
         'n8n_processed':   n8n_processed,
         'total_attacks':   len(attacks),
     }
+    
+    
