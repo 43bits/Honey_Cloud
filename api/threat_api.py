@@ -1009,7 +1009,8 @@ def n8n_status():
 
     try:
         req = urllib.request.Request(
-            'http://localhost:5678/healthz'
+            # 'http://localhost:5678/healthz'
+            'https://primary-production-7b22f.up.railway.app/healthz'
         )
         with urllib.request.urlopen(req, timeout=3) as r:
             n8n_alive = r.status == 200
@@ -1023,9 +1024,12 @@ def n8n_status():
 
     return {
         'n8n_running':     n8n_alive,
-        'n8n_url':         'http://localhost:5678',
-        'webhook_url':     'http://localhost:5678/webhook/honeypot-attack',
-        'callback_url':    'http://localhost:8000/n8n/enrichment',
+        # 'n8n_url':         'http://localhost:5678',
+        'n8n_url':         'https://primary-production-7b22f.up.railway.app',
+        # 'webhook_url':     'http://localhost:5678/webhook/honeypot-attack',
+        'webhook_url':     'https://primary-production-7b22f.up.railway.app/webhook-test/honeypot-attack',
+        # 'callback_url':    'http://localhost:8000/n8n/enrichment',
+        'callback_url':    'https://honeycloud-api.onrender.com/n8n/enrichment',
         'n8n_processed':   n8n_processed,
         'total_attacks':   len(attacks),
     }
