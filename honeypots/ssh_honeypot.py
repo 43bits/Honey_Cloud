@@ -37,16 +37,85 @@ LOG_FILE         = 'logs/ssh_adaptive.json'
 os.makedirs('logs', exist_ok=True)
 
 # ── Kafka ───────────────────────────────────────────
+# try:
+#     producer = KafkaProducer(
+#         bootstrap_servers=['localhost:9092'],
+#         value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+#         retries=3,
+#     )
+#     print('[✓] Kafka connected')
+# except Exception as e:
+#     print(f'[!] Kafka unavailable: {e} — logging to file only')
+#     producer = None
+
+# ── Kafka ───────────────────────────────────────────
+def _create_producer():
+    """
+    Create KafkaProducer.
+    Uses Redpanda Cloud (SASL_SSL) if env vars present,
+    falls back to local Docker Kafka for development.
+    """
+    import ssl
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    BROKER   = os.getenv('REDPANDA_BROKER',   '').strip()
+    USERNAME = os.getenv('REDPANDA_USERNAME',  '').strip()
+    PASSWORD = os.getenv('REDPANDA_PASSWORD',  '').strip()
+
+    if BROKER and USERNAME and PASSWORD:
+        ssl_ctx = ssl.create_default_context()
+        p = KafkaProducer(
+            bootstrap_servers   = [BROKER],
+            security_protocol   = 'SASL_SSL',
+            sasl_mechanism      = 'SCRAM-SHA-256',
+            sasl_plain_username = USERNAME,
+            sasl_plain_password = PASSWORD,
+            ssl_context         = ssl_ctx,
+            value_serializer    = lambda v: json.dumps(v).encode('utf-8'),
+            retries             = 5,
+            request_timeout_ms  = 30000,
+        )
+        print(f'[✓] Redpanda Cloud connected → {BROKER}')
+        return p
+    else:
+        p = KafkaProducer(
+            bootstrap_servers = ['localhost:9092'],
+            value_serializer  = lambda v: json.dumps(v).encode('utf-8'),
+            retries           = 3,
+        )
+        print('[✓] Local Kafka connected')
+        return p
+
 try:
-    producer = KafkaProducer(
-        bootstrap_servers=['localhost:9092'],
-        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-        retries=3,
-    )
-    print('[✓] Kafka connected')
+    producer = _create_producer()
 except Exception as e:
     print(f'[!] Kafka unavailable: {e} — logging to file only')
     producer = None
+
+# def get_kafka_producer():
+#     import ssl
+#     from kafka import KafkaProducer
+
+#     BROKER   = os.getenv('UPSTASH_KAFKA_BROKER',   '')
+#     USERNAME = os.getenv('UPSTASH_KAFKA_USERNAME',  '')
+#     PASSWORD = os.getenv('UPSTASH_KAFKA_PASSWORD',  '')
+
+#     if BROKER:
+#         return KafkaProducer(
+#             bootstrap_servers   = [BROKER],
+#             security_protocol   = 'SASL_SSL',
+#             sasl_mechanism      = 'SCRAM-SHA-256',
+#             sasl_plain_username = USERNAME,
+#             sasl_plain_password = PASSWORD,
+#             ssl_context         = ssl.create_default_context(),
+#             value_serializer    = lambda v: json.dumps(v).encode('utf-8'),
+#         )
+#     else:
+#         return KafkaProducer(
+#             bootstrap_servers = ['localhost:9092'],
+#             value_serializer  = lambda v: json.dumps(v).encode('utf-8'),
+#         )
 
 
 # ── Session handler ─────────────────────────────────
@@ -243,7 +312,11 @@ def run():
     print(f'  Port:      {PORT}')
     print(f'  Strategies: deny_fast | slow_response | '
           f'fake_success | full_fake_env')
-    print(f'  Kafka:     {"connected" if producer else "offline"}')
+    
+    # print(f'  Kafka:     {"connected" if producer else "offline"}')
+    # import os
+    _broker = os.getenv('REDPANDA_BROKER', 'localhost:9092')
+    print(f'  Kafka:     {"connected" if producer else "offline"} ({_broker})')
     print(f'  Log file:  {LOG_FILE}')
     print(f'{"="*55}\n')
 

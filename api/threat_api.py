@@ -270,27 +270,98 @@ def _push_to_n8n(attack: dict):
         print(f"[n8n] Push failed (workflow may not be active): {e}")
 
 
-# ── Kafka Consumer Thread ──────────────────────────────
+# ── Kafka Consumer Thread original──────────────────────────────
+# def kafka_consumer_thread():
+#     """
+#     Runs inside the API process so it shares the same
+#     attack_store and investigation_store as the API.
+#     """
+#     time.sleep(3)  # wait for API to fully start
+
+#     try:
+#         from kafka import KafkaConsumer
+#         consumer = KafkaConsumer(
+#             'honeypot-attacks',
+#             bootstrap_servers=['localhost:9092'],
+#             auto_offset_reset='latest',
+#             enable_auto_commit=True,
+#             # group_id='honeypot-api-group',
+#             group_id=f'honeypot-api-{int(time.time())}',
+#             value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+#             consumer_timeout_ms=-1
+#         )
+#         print("\n[✓] Kafka consumer started inside API — sharing same store")
+
+#         for message in consumer:
+#             log    = message.value
+#             result = run_ml_pipeline(log)
+#             store.add(result)
+#             print(
+#                 f"[Kafka] {result['emoji']} "
+#                 f"{result['attack_type']} from "
+#                 f"{result['source_ip']}"
+#             )
+            
+#             # ── Push HIGH/CRITICAL to n8n ──────────────
+#             if result.get('risk_level') in ('HIGH', 'CRITICAL'):
+#                 threading.Thread(
+#                     target=_push_to_n8n,
+#                     args=(result,),
+#                     daemon=True,
+#                 ).start()
+
+#     except Exception as e:
+#         print(f"[!] Kafka consumer thread error: {e}")
+#         print("[!] API still works — use /analyze endpoint directly")
+
 def kafka_consumer_thread():
     """
-    Runs inside the API process so it shares the same
-    attack_store and investigation_store as the API.
+    Kafka consumer — works with both local Docker Kafka
+    and Redpanda Cloud (SASL_SSL).
+    Auto-detects based on REDPANDA_BROKER env var.
     """
-    time.sleep(3)  # wait for API to fully start
+    time.sleep(3)
+
+    BROKER   = os.getenv('REDPANDA_BROKER',   '')
+    USERNAME = os.getenv('REDPANDA_USERNAME',  '')
+    PASSWORD = os.getenv('REDPANDA_PASSWORD',  '')
 
     try:
         from kafka import KafkaConsumer
-        consumer = KafkaConsumer(
-            'honeypot-attacks',
-            bootstrap_servers=['localhost:9092'],
-            auto_offset_reset='latest',
-            enable_auto_commit=True,
-            # group_id='honeypot-api-group',
-            group_id=f'honeypot-api-{int(time.time())}',
-            value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-            consumer_timeout_ms=-1
-        )
-        print("\n[✓] Kafka consumer started inside API — sharing same store")
+        import ssl
+
+        if BROKER and USERNAME:
+            # ── Redpanda Cloud (production) ──────────────
+            ssl_ctx = ssl.create_default_context()
+            consumer = KafkaConsumer(
+                'honeypot-attacks',
+                bootstrap_servers     = [BROKER],
+                security_protocol     = 'SASL_SSL',
+                sasl_mechanism        = 'SCRAM-SHA-256',
+                sasl_plain_username   = USERNAME,
+                sasl_plain_password   = PASSWORD,
+                ssl_context           = ssl_ctx,
+                auto_offset_reset     = 'latest',
+                enable_auto_commit    = True,
+                group_id              = f'honeycloud-{int(time.time())}',
+                value_deserializer    = lambda m: json.loads(m.decode('utf-8')),
+                consumer_timeout_ms   = -1,
+                request_timeout_ms    = 30000,
+                session_timeout_ms    = 10000,
+            )
+            print(f"\n[✓] Redpanda Cloud consumer connected → {BROKER}")
+        else:
+            # ── Local Docker Kafka (development) ─────────
+            consumer = KafkaConsumer(
+                'honeypot-attacks',
+                bootstrap_servers     = ['localhost:9092'],
+                auto_offset_reset     = 'latest',
+                enable_auto_commit    = True,
+                group_id              = f'honeypot-api-{int(time.time())}',
+                value_deserializer    = lambda m: json.loads(m.decode('utf-8')),
+                consumer_timeout_ms   = -1,
+            )
+            print("\n[✓] Local Kafka consumer connected")
 
         for message in consumer:
             log    = message.value
@@ -298,11 +369,8 @@ def kafka_consumer_thread():
             store.add(result)
             print(
                 f"[Kafka] {result['emoji']} "
-                f"{result['attack_type']} from "
-                f"{result['source_ip']}"
+                f"{result['attack_type']} from {result['source_ip']}"
             )
-            
-            # ── Push HIGH/CRITICAL to n8n ──────────────
             if result.get('risk_level') in ('HIGH', 'CRITICAL'):
                 threading.Thread(
                     target=_push_to_n8n,
@@ -311,9 +379,8 @@ def kafka_consumer_thread():
                 ).start()
 
     except Exception as e:
-        print(f"[!] Kafka consumer thread error: {e}")
+        print(f"[!] Kafka consumer error: {e}")
         print("[!] API still works — use /analyze endpoint directly")
-
 
 # ── Startup ────────────────────────────────────────────
 @app.on_event("startup")
