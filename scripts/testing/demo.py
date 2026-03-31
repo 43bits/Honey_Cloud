@@ -5,21 +5,115 @@
 # Phase 5: Critical alert   (one devastating attack to end on)
 
 # scripts/demo.py
+# import json
+# import time
+# import random
+# import datetime
+# from kafka import KafkaProducer
+
+# # ── Setup ──────────────────────────────────────────────
+# producer = KafkaProducer(
+#     bootstrap_servers=['localhost:9092'],
+#     value_serializer=lambda v: json.dumps(v).encode('utf-8')
+# )
+
+# scripts/demo.py
 import json
 import time
 import random
 import datetime
+import os
+import ssl
+import sys
+import requests
+from dotenv import load_dotenv
 from kafka import KafkaProducer
 
-# ── Setup ──────────────────────────────────────────────
-producer = KafkaProducer(
-    bootstrap_servers=['localhost:9092'],
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+load_dotenv()
+
+# ── Kafka / API Setup ──────────────────────────────────
+# Priority 1: Redpanda Cloud (production)
+# Priority 2: Local Kafka (development)
+# Priority 3: Direct HTTP to Render API (fallback)
+
+RENDER_API = os.getenv(
+    'NEXT_PUBLIC_API_URL',
+    'https://honeycloud-api.onrender.com'
+).rstrip('/')
+
+BROKER   = os.getenv('REDPANDA_BROKER',   '').strip()
+USERNAME = os.getenv('REDPANDA_USERNAME',  '').strip()
+PASSWORD = os.getenv('REDPANDA_PASSWORD',  '').strip()
+
+producer = None
+
+if BROKER and USERNAME and PASSWORD:
+    try:
+        ssl_ctx  = ssl.create_default_context()
+        producer = KafkaProducer(
+            bootstrap_servers   = [BROKER],
+            security_protocol   = 'SASL_SSL',
+            sasl_mechanism      = 'SCRAM-SHA-256',
+            sasl_plain_username = USERNAME,
+            sasl_plain_password = PASSWORD,
+            ssl_context         = ssl_ctx,
+            value_serializer    = lambda v: json.dumps(v).encode('utf-8'),
+            retries             = 5,
+            request_timeout_ms  = 30000,
+        )
+        print(f'[✓] Redpanda Cloud connected → {BROKER}')
+    except Exception as e:
+        print(f'[!] Redpanda unavailable: {e}')
+        producer = None
+else:
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers = ['localhost:9092'],
+            value_serializer  = lambda v: json.dumps(v).encode('utf-8'),
+            retries           = 3,
+        )
+        print('[✓] Local Kafka connected')
+    except Exception as e:
+        print(f'[!] Local Kafka unavailable: {e}')
+        producer = None
+
+if not producer:
+    print(f'[!] No Kafka — will send directly to Render API: {RENDER_API}')
+    
+    
+    
+    
+    
+
+# def send(log: dict):
+#     producer.send('honeypot-attacks', log)
+#     producer.flush()
 
 def send(log: dict):
-    producer.send('honeypot-attacks', log)
-    producer.flush()
+    """
+    Send attack log via Redpanda → local Kafka → Render API
+    in that priority order.
+    """
+    if producer:
+        try:
+            producer.send('honeypot-attacks', log)
+            producer.flush()
+            return
+        except Exception as e:
+            print(f'[!] Kafka send failed: {e} — falling back to API')
+
+    # Fallback: POST directly to Render /analyze
+    try:
+        requests.post(
+            f'{RENDER_API}/analyze',
+            json    = log,
+            timeout = 10,
+            headers = {'Content-Type': 'application/json'},
+        )
+    except Exception as e:
+        print(f'[!] API send failed: {e}')
+        
+        
 
 def now():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
