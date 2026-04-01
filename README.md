@@ -10,6 +10,8 @@ IMPORTANT LINK for deploying
  https://primary-production-7b22f.up.railway.app/webhook-test/honeypot-attack
  https://primary-production-7b22f.up.railway.app/workflow/HhMmL8biG5nRdzvr
  https://railway.com/project/c7b84d25-36c5-4c30-93dd-65f477134d8b?environmentId=b689c01c-cb5d-48c7-a97d-d1dd7c7d128a
+ https://cloud.redpanda.com/clusters
+ 
  
 
 
