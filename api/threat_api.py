@@ -24,12 +24,18 @@ from ml_models.risk_scorer import calculate_risk_score
 import os
 # from dotenv import load_dotenv
 load_dotenv()
+
+
 # Add this right after load_dotenv() in threat_api.py
 _abuse_key = os.getenv('ABUSEIPDB_API_KEY',  '').strip()
 _vt_key    = os.getenv('VIRUSTOTAL_API_KEY', '').strip()
 
 print(f"[Startup] AbuseIPDB key:  {'✓ loaded' if _abuse_key  else '✗ MISSING'}")
 print(f"[Startup] VirusTotal key: {'✓ loaded' if _vt_key    else '✗ MISSING'}")
+print(f"[Startup] REDPANDA_BROKER:   {'✓ SET' if os.getenv('REDPANDA_BROKER')  else '✗ MISSING — using localhost'}")
+print(f"[Startup] REDPANDA_USERNAME: {'✓ SET' if os.getenv('REDPANDA_USERNAME') else '✗ MISSING'}")
+print(f"[Startup] N8N_WEBHOOK_URL:   {'✓ SET' if os.getenv('N8N_WEBHOOK_URL')  else '✗ MISSING'}")
+
 
 
 # ── App Setup ──────────────────────────────────────────
@@ -326,25 +332,24 @@ def _push_to_n8n(attack: dict):
 #         print(f"[!] Kafka consumer thread error: {e}")
 #         print("[!] API still works — use /analyze endpoint directly")
 
+
 def kafka_consumer_thread():
     """
-    Kafka consumer — works with both local Docker Kafka
-    and Redpanda Cloud (SASL_SSL).
-    Auto-detects based on REDPANDA_BROKER env var.
+    Reads from Redpanda Cloud (production) or local Kafka (dev).
+    Auto-detects via REDPANDA_BROKER env var.
     """
     time.sleep(3)
 
-    BROKER   = os.getenv('REDPANDA_BROKER',   '')
-    USERNAME = os.getenv('REDPANDA_USERNAME',  '')
-    PASSWORD = os.getenv('REDPANDA_PASSWORD',  '')
+    BROKER   = os.getenv('REDPANDA_BROKER',   '').strip()
+    USERNAME = os.getenv('REDPANDA_USERNAME',  '').strip()
+    PASSWORD = os.getenv('REDPANDA_PASSWORD',  '').strip()
 
     try:
         from kafka import KafkaConsumer
         import ssl
 
-        if BROKER and USERNAME:
-            # ── Redpanda Cloud (production) ──────────────
-            ssl_ctx = ssl.create_default_context()
+        if BROKER and USERNAME and PASSWORD:
+            ssl_ctx  = ssl.create_default_context()
             consumer = KafkaConsumer(
                 'honeypot-attacks',
                 bootstrap_servers     = [BROKER],
@@ -353,11 +358,9 @@ def kafka_consumer_thread():
                 sasl_plain_username   = USERNAME,
                 sasl_plain_password   = PASSWORD,
                 ssl_context           = ssl_ctx,
-                # auto_offset_reset     = 'latest',
-                auto_offset_reset     = 'earliest',
+                auto_offset_reset     = 'latest',
                 enable_auto_commit    = True,
-                # group_id              = f'honeycloud-{int(time.time())}',
-                group_id              = f'honeycloud-api',
+                group_id              = f'honeycloud-api-{int(time.time())}',
                 value_deserializer    = lambda m: json.loads(m.decode('utf-8')),
                 consumer_timeout_ms   = -1,
                 request_timeout_ms    = 30000,
@@ -365,13 +368,12 @@ def kafka_consumer_thread():
             )
             print(f"\n[✓] Redpanda Cloud consumer connected → {BROKER}")
         else:
-            # ── Local Docker Kafka (development) ─────────
             consumer = KafkaConsumer(
                 'honeypot-attacks',
                 bootstrap_servers     = ['localhost:9092'],
                 auto_offset_reset     = 'latest',
                 enable_auto_commit    = True,
-                group_id              = f'honeypot-api-{int(time.time())}',
+                group_id              = f'honeycloud-api-{int(time.time())}',
                 value_deserializer    = lambda m: json.loads(m.decode('utf-8')),
                 consumer_timeout_ms   = -1,
             )
@@ -382,9 +384,11 @@ def kafka_consumer_thread():
             result = run_ml_pipeline(log)
             store.add(result)
             print(
-                f"[Kafka] {result['emoji']} "
-                f"{result['attack_type']} from {result['source_ip']}"
+                f"[Kafka→Store] {result.get('emoji','')} "
+                f"{result.get('attack_type','')} from "
+                f"{result.get('source_ip','')}"
             )
+            # Push HIGH/CRITICAL to n8n
             if result.get('risk_level') in ('HIGH', 'CRITICAL'):
                 threading.Thread(
                     target=_push_to_n8n,
@@ -395,6 +399,10 @@ def kafka_consumer_thread():
     except Exception as e:
         print(f"[!] Kafka consumer error: {e}")
         print("[!] API still works — use /analyze endpoint directly")
+        
+
+
+
 
 # ── Startup ────────────────────────────────────────────
 @app.on_event("startup")
@@ -441,7 +449,18 @@ def analyze(log: AttackLog):
     """Analyze a single attack through all ML models."""
     result = run_ml_pipeline(log.dict())
     store.add(result)
+
+    # Push HIGH/CRITICAL to n8n regardless of source
+    if result.get('risk_level') in ('HIGH', 'CRITICAL'):
+        threading.Thread(
+            target=_push_to_n8n,
+            args=(result,),
+            daemon=True,
+        ).start()
+
     return result
+
+
 
 
 @app.get("/attacks")
