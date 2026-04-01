@@ -5,6 +5,14 @@
 ### AI-Driven Adaptive Honeypot Intelligence Platform
 ### for Real-Time Cyber Threat Detection ...
 
+IMPORTANT LINK for deploying
+ https://honeycloud-api.onrender.com/
+ https://primary-production-7b22f.up.railway.app/webhook-test/honeypot-attack
+ https://primary-production-7b22f.up.railway.app/workflow/HhMmL8biG5nRdzvr
+ https://railway.com/project/c7b84d25-36c5-4c30-93dd-65f477134d8b?environmentId=b689c01c-cb5d-48c7-a97d-d1dd7c7d128a
+ 
+
+
 *Turning attacker behavior into actionable cyber intelligence.*
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
