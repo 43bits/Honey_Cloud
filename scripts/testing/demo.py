@@ -89,29 +89,53 @@ if not producer:
 #     producer.send('honeypot-attacks', log)
 #     producer.flush()
 
+# def send(log: dict):
+#     """
+#     Send attack log via Redpanda → local Kafka → Render API
+#     in that priority order.
+#     """
+#     if producer:
+#         try:
+#             producer.send('honeypot-attacks', log)
+#             producer.flush()
+#             return
+#         except Exception as e:
+#             print(f'[!] Kafka send failed: {e} — falling back to API')
+
+#     # Fallback: POST directly to Render /analyze
+#     try:
+#         requests.post(
+#             f'{RENDER_API}/analyze',
+#             json    = log,
+#             timeout = 10,
+#             headers = {'Content-Type': 'application/json'},
+#         )
+#     except Exception as e:
+#         print(f'[!] API send failed: {e}')
+
 def send(log: dict):
     """
-    Send attack log via Redpanda → local Kafka → Render API
-    in that priority order.
+    Send via Redpanda Kafka AND directly to Render API.
+    Dual-path guarantees store is populated regardless of consumer state.
     """
+    # Path 1 — Redpanda (for real-time streaming)
     if producer:
         try:
             producer.send('honeypot-attacks', log)
             producer.flush()
-            return
         except Exception as e:
-            print(f'[!] Kafka send failed: {e} — falling back to API')
+            print(f'[!] Kafka send failed: {e}')
 
-    # Fallback: POST directly to Render /analyze
+    # Path 2 — Direct API call (guaranteed store population)
     try:
         requests.post(
             f'{RENDER_API}/analyze',
             json    = log,
-            timeout = 10,
+            timeout = 8,
             headers = {'Content-Type': 'application/json'},
         )
     except Exception as e:
-        print(f'[!] API send failed: {e}')
+        print(f'[!] API fallback failed: {e}')
         
         
 
